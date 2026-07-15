@@ -1,0 +1,18 @@
+{
+  "name": "promptmetrics",
+  "owner": {
+    "name": "PromptMetrics"
+  },
+  "description": "PromptMetrics newsletter skill — brief to LMX to preview to send on Loops.so, with two human gates. Never auto-fires.",
+  "plugins": [
+    {
+      "name": "promptmetrics-newsletter",
+      "source": ".",
+      "description": "Opinionated newsletter workflow on top of Loops.so — brief to LMX to preview to send, with two human gates. Never auto-fires.",
+      "homepage": "https://github.com/promptmetrics/newsletter-skill",
+      "repository": "https://github.com/promptmetrics/newsletter-skill",
+      "license": "MIT",
+      "keywords": ["newsletter", "loops", "email", "lmx"]
+    }
+  ]
+}

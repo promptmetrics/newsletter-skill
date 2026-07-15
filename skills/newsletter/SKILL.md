@@ -48,7 +48,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 **Every run — verify the four prerequisites (hard gate):**
 1. Key present: `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status` == `stored` **or** `LOOPS_API_KEY` in env. Missing → onboarding step 1.
-2. Loops API + LMX skills installed. Missing → point to the install script (`./scripts/install-loops-skills.sh` from the repo root) and stop.
+2. Loops API + LMX skills installed. Missing → tell the user to run `${CLAUDE_SKILL_DIR}/scripts/install-loops-skills.sh` (or, standalone: `curl -fsSL https://install.loops.so/skills | sh`) and stop.
 3. "PromptMetrics Paper" Theme exists (`GET /themes`). Missing → onboarding step 2.
 4. `hero_logo_url` known. Missing → onboarding step 4.
 

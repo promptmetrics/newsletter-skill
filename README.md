@@ -6,15 +6,35 @@ A Claude Code skill that turns a newsletter brief into a Loops.so email — **as
 
 ## Install
 
-```bash
-git clone https://github.com/promptmetrics/newsletter-skill promptmetrics-newsletter-skill
-cd promptmetrics-newsletter-skill
-cp .env.example .env
-# edit .env: set LOOPS_API_KEY  (Loops Settings -> API; never commit the real key)
-./scripts/install-loops-skills.sh   # pulls in Loops API/LMX/CLI/email skills
+### From inside Claude Code (recommended — no clone needed)
+
+The repo ships its own marketplace, so you can install the skill in one step from any session:
+
+```
+/plugin marketplace add promptmetrics/newsletter-skill
+/plugin install promptmetrics-newsletter@promptmetrics
+/reload-plugins
 ```
 
-Then install this plugin into Claude Code per your team's plugin flow (the `.claude-plugin/plugin.json` registers the `newsletter` skill at `skills/newsletter`).
+Then invoke with `/promptmetrics-newsletter:newsletter`. Pick **User scope** to use it across all your projects, or **Project scope** to share it with collaborators via the repo's `.claude/settings.json`. (Teams can also pre-declare the marketplace in `.claude/settings.json` via `extraKnownMarketplaces` + `enabledPlugins` so members are prompted to install on trust.)
+
+### From a clone (development / local edits)
+
+```bash
+git clone https://github.com/promptmetrics/newsletter-skill
+cd newsletter-skill
+./skills/newsletter/scripts/install-loops-skills.sh   # pulls in Loops API/LMX/CLI/email skills
+```
+
+Then load it for a session with `claude --plugin-dir .`, or copy it into `~/.claude/skills/` to auto-load.
+
+### Per-machine prerequisites (either install path)
+
+Two things no install scope can provide for you — each machine needs them once:
+1. **Loops API/LMX skills** — `./skills/newsletter/scripts/install-loops-skills.sh` (or `curl -fsSL https://install.loops.so/skills | sh`).
+2. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). See onboarding (`skills/newsletter/references/onboarding.md`).
+
+The first run walks you through the rest (design system/Theme, from address) via onboarding.
 
 ## One-time Loops UI setup (do this before the first run)
 
@@ -81,14 +101,17 @@ Still **your call** (account/team config, not code):
 ## Repo layout
 
 ```
-.claude-plugin/plugin.json
+.claude-plugin/
+  plugin.json          # plugin manifest
+  marketplace.json     # self-hosted marketplace (enables /plugin install)
 skills/newsletter/
   SKILL.md
   references/
     brief-schema.md  lmx-master-template.md  token-map.md
-    guardian-checklist.md  spam-terms.md  loops-endpoints.md
-    lmx-notes.md  senders.md
-scripts/install-loops-skills.sh
+    onboarding.md  guardian-checklist.md  spam-terms.md
+    loops-endpoints.md  lmx-notes.md  senders.md
+  scripts/
+    install-loops-skills.sh  loops-key.sh
 .env.example  .gitignore  README.md
 ```
 
