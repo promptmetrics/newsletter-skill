@@ -5,6 +5,11 @@ description: |
   preview to the author, runs pre-send safety checks, and — after two human
   approval gates — sends to a chosen Loops mailing list. Sits on top of Loops'
   shipped API/LMX/CLI skills. Never auto-fires.
+when_to_use: |
+  Use when the user wants to send or draft a newsletter, build a "Field Notes"
+  issue, or send a Loops.so campaign — e.g. "send this week's newsletter",
+  "draft Field Notes issue 12", "send a preview to me then to the list". Do NOT
+  use for transactional email, one-off transactional sends, or non-Loops email.
 ---
 
 # PromptMetrics Newsletter Skill
@@ -27,19 +32,27 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 - `references/loops-endpoints.md` — exact endpoints + field contracts (Steps 0,2,4,5,6,7,9)
 - `references/guardian-checklist.md` — Guardian scope + gap-fillers (Step 6)
 - `references/spam-terms.md` — spam-trigger term list (Step 6b)
+- `references/onboarding.md` — first-run setup: design system/Theme, from address, API key (secure keychain storage) (Step 0)
 - `references/lmx-notes.md` — LMX gotchas (Steps 3,4)
 - `references/senders.md` — who-can-send allowlist (Step 8)
 
 ## Procedure
 
-### Step 0 — Prerequisites (skill)
-Before anything:
-1. `LOOPS_API_KEY` is set in env. If not → **stop** and ask the user to set it (never read it from disk).
-2. Loops API + LMX skills are installed. If not → point to `scripts/install-loops-skills.sh` and stop.
-3. The "PromptMetrics Paper" Theme exists: `GET /themes` (via the Loops API skill); look for `name == "PromptMetrics Paper"`. If missing → **stop** and point to the one-time UI setup in README.
-4. `hero_logo_url` is known (the one-time `POST /uploads` result, stored in the brief or project config). If absent → **stop** and point to README one-time setup step 3.
+### Step 0 — Onboarding & prerequisites (skill)
 
-Hard gate. No Theme or logo URL, no run.
+**First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
+1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`).
+2. **Design system / template** — the "PromptMetrics Paper" Theme created in the Loops UI with the exact Paper token values (`references/token-map.md`), verified via `GET /themes`.
+3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /campaigns` that does **not** 400.
+4. **Logo** — `hero_logo_url` from a one-time `POST /uploads`.
+
+**Every run — verify the four prerequisites (hard gate):**
+1. Key present: `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status` == `stored` **or** `LOOPS_API_KEY` in env. Missing → onboarding step 1.
+2. Loops API + LMX skills installed. Missing → point to the install script (`./scripts/install-loops-skills.sh` from the repo root) and stop.
+3. "PromptMetrics Paper" Theme exists (`GET /themes`). Missing → onboarding step 2.
+4. `hero_logo_url` known. Missing → onboarding step 4.
+
+No key, no Theme, no logo → no run. Onboarding is idempotent — re-run only what's missing.
 
 ### Step 1 — Collect the brief (skill)
 Input modes, in priority order:

@@ -30,7 +30,12 @@ The skill checks for these at Step 0 and will stop if missing.
    - Document-level `<meta name="color-scheme" content="light dark">`
 3. **Upload the logo** — via `POST /uploads` (Loops API skill) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
 4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
-5. **Set `LOOPS_API_KEY`** in your local `.env`.
+5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
+   ```
+   ./skills/newsletter/scripts/loops-key.sh set      # types the key silently
+   ./skills/newsletter/scripts/loops-key.sh status    # -> stored
+   ```
+   To make it available to the Loops API skill, onboarding offers to add `export LOOPS_API_KEY="$(./skills/newsletter/scripts/loops-key.sh get)"` to your shell profile (with your confirmation). `.env` (gitignored) remains a supported alternative.
 
 ## Who can send
 

@@ -1,8 +1,13 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "promptmetrics-newsletter",
   "version": "0.1.0",
   "description": "Opinionated newsletter workflow on top of Loops.so — brief to LMX to preview to send, with two human gates. Never auto-fires.",
-  "skills": [
-    { "name": "newsletter", "path": "skills/newsletter" }
-  ]
+  "homepage": "https://github.com/promptmetrics/newsletter-skill",
+  "repository": "https://github.com/promptmetrics/newsletter-skill",
+  "author": {
+    "name": "PromptMetrics",
+    "url": "https://github.com/promptmetrics"
+  },
+  "license": "MIT"
 }
