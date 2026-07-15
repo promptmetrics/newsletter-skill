@@ -1,0 +1,8 @@
+{
+  "name": "promptmetrics-newsletter",
+  "version": "0.1.0",
+  "description": "Opinionated newsletter workflow on top of Loops.so — brief to LMX to preview to send, with two human gates. Never auto-fires.",
+  "skills": [
+    { "name": "newsletter", "path": "skills/newsletter" }
+  ]
+}
