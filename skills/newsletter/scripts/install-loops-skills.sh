@@ -1,21 +1,20 @@
 #!/usr/bin/env sh
-# Installs Loops' official agent skills (API, LMX, CLI, Email best-practices)
-# into this project. The PromptMetrics newsletter skill is a thin layer on top
-# of these — it does not hand-roll raw REST.
+# DEPRECATED — kept only so old docs don't break.
 #
-# Source: https://loops.so/docs/skills
-set -e
-
-echo "Installing Loops official skills..."
-curl -fsSL https://install.loops.so/skills | sh
-
-echo ""
-echo "Installed Loops skills should now include:"
-echo "  - loops-api        (REST endpoints: campaigns, email-messages, lists, guardian, uploads)"
-echo "  - loops-lmx        (Loops Markup eXpressions component reference)"
-echo "  - loops-cli        (CLI wrappers)"
-echo "  - loops-email      (email best-practices: dark mode, client rendering, accessibility)"
-echo ""
-echo "Next: store your Loops API key with:"
-echo "  ${CLAUDE_SKILL_DIR:-./skills/newsletter}/scripts/loops-key.sh set"
-echo "then complete the one-time Loops UI setup (onboarding) before running the newsletter skill."
+# The Loops skills (loops-api, loops-cli, loops-lmx, loops-email-sending-best-practices)
+# are now VENDORED inside this plugin. Users no longer need to run anything:
+#
+#   /plugin install promptmetrics-newsletter@promptmetrics
+#
+# installs them automatically. There is no separate curl/npx step.
+#
+# Maintainers re-syncing the vendored skills from upstream should use:
+#
+#   ./skills/newsletter/scripts/sync-loops-skills.sh [ref]   # default: v0.2.0
+#
+# This stub does nothing and exits 0.
+echo "install-loops-skills.sh is deprecated: the Loops skills now ship bundled"
+echo "with the promptmetrics-newsletter plugin. Install the plugin instead:"
+echo "  /plugin install promptmetrics-newsletter@promptmetrics"
+echo "(Maintainers syncing upstream: use scripts/sync-loops-skills.sh.)"
+exit 0

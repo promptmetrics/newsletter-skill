@@ -23,18 +23,33 @@ Then invoke with `/promptmetrics-newsletter:newsletter`. Pick **User scope** to 
 ```bash
 git clone https://github.com/promptmetrics/newsletter-skill
 cd newsletter-skill
-./skills/newsletter/scripts/install-loops-skills.sh   # pulls in Loops API/LMX/CLI/email skills
 ```
 
-Then load it for a session with `claude --plugin-dir .`, or copy it into `~/.claude/skills/` to auto-load.
+The four Loops skills (API / LMX / CLI / email) are **vendored** in `skills/loops-*` — no separate install step. Load the plugin for a session with `claude --plugin-dir .`, or copy it into `~/.claude/skills/` to auto-load.
 
 ### Per-machine prerequisites (either install path)
 
-Two things no install scope can provide for you — each machine needs them once:
-1. **Loops API/LMX skills** — `./skills/newsletter/scripts/install-loops-skills.sh` (or `curl -fsSL https://install.loops.so/skills | sh`).
-2. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). See onboarding (`skills/newsletter/references/onboarding.md`).
+One thing no install scope can provide for you — each machine needs it once:
+1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). See onboarding (`skills/newsletter/references/onboarding.md`).
 
-The first run walks you through the rest (design system/Theme, from address) via onboarding.
+The Loops skills themselves ship bundled with the plugin (see "Vendored Loops skills" below) — no per-machine step for them. The first run walks you through the rest (design system/Theme, from address) via onboarding.
+
+## Vendored Loops skills
+
+The four official Loops skills (`loops-api`, `loops-cli`, `loops-lmx`, `loops-email-sending-best-practices`) are vendored into this repo under `skills/loops-*` and declared in `.claude-plugin/marketplace.json`'s `skills` array, so `/plugin install promptmetrics-newsletter@promptmetrics` brings them along with **zero separate commands**. Each vendored `SKILL.md` carries an attribution header and each dir contains the upstream `LICENSE` (MIT, Copyright (c) 2026 Loops); see `NOTICE`.
+
+**Maintainers — re-syncing from upstream:**
+
+```bash
+./skills/newsletter/scripts/sync-loops-skills.sh          # default: v0.2.0
+./skills/newsletter/scripts/sync-loops-skills.sh v0.2.1   # or any tag/branch
+```
+
+This fetches `github.com/Loops-so/skills` at the given ref, copies the four skill dirs + their `LICENSE`, and rewrites the attribution headers. Review the diff, commit, and — if the ref changed — update the pinned ref in `NOTICE` and the script default. (`install-loops-skills.sh` is kept as a no-op stub so old docs don't break.)
+
+### Alternatives (not used)
+
+A cross-marketplace plugin `dependencies` declaration (`allowCrossMarketplaceDependenciesOn` pointing at `loops-so/skills`) would keep Loops as the source of truth, but it is **not** zero-step: the user must still run `/plugin marketplace add loops-so/skills` first or the plugin lands `dependency-unsatisfied` (companion marketplaces are not auto-registered). Vendoring was chosen because it is the only truly zero-step path. The dependency option is recorded here as a future fallback if maintaining the vendored copy becomes burdensome.
 
 ## One-time Loops UI setup (do this before the first run)
 
@@ -103,16 +118,19 @@ Still **your call** (account/team config, not code):
 ```
 .claude-plugin/
   plugin.json          # plugin manifest
-  marketplace.json     # self-hosted marketplace (enables /plugin install)
-skills/newsletter/
+  marketplace.json     # self-hosted marketplace; skills array declares all 5 skill dirs
+skills/newsletter/     # the newsletter workflow skill
   SKILL.md
-  references/
-    brief-schema.md  lmx-master-template.md  token-map.md
-    onboarding.md  guardian-checklist.md  spam-terms.md
-    loops-endpoints.md  lmx-notes.md  senders.md
+  references/          # brief-schema, lmx-master-template, token-map, onboarding, …
   scripts/
-    install-loops-skills.sh  loops-key.sh
-.env.example  .gitignore  README.md
+    loops-key.sh                 # keychain API-key store
+    sync-loops-skills.sh         # maintainer: re-sync vendored skills from upstream
+    install-loops-skills.sh      # deprecated no-op stub (kept so old docs don't break)
+skills/loops-api/                # vendored Loops skills (MIT, synced from Loops-so/skills @ v0.2.0)
+skills/loops-cli/
+skills/loops-lmx/
+skills/loops-email-sending-best-practices/
+NOTICE  LICENSE  .env.example  .gitignore  README.md
 ```
 
 ## Phasing

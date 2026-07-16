@@ -48,7 +48,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 **Every run — verify the four prerequisites (hard gate):**
 1. Key present: `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status` == `stored` **or** `LOOPS_API_KEY` in env. Missing → onboarding step 1.
-2. Loops API + LMX skills installed. Missing → tell the user to run `${CLAUDE_SKILL_DIR}/scripts/install-loops-skills.sh` (or, standalone: `curl -fsSL https://install.loops.so/skills | sh`) and stop.
+2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
 3. "PromptMetrics Paper" Theme exists (`GET /themes`). Missing → onboarding step 2.
 4. `hero_logo_url` known. Missing → onboarding step 4.
 

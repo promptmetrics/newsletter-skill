@@ -12,7 +12,14 @@
       "homepage": "https://github.com/promptmetrics/newsletter-skill",
       "repository": "https://github.com/promptmetrics/newsletter-skill",
       "license": "MIT",
-      "keywords": ["newsletter", "loops", "email", "lmx"]
+      "keywords": ["newsletter", "loops", "email", "lmx"],
+      "skills": [
+        "./skills/newsletter",
+        "./skills/loops-api",
+        "./skills/loops-cli",
+        "./skills/loops-lmx",
+        "./skills/loops-email-sending-best-practices"
+      ]
     }
   ]
 }
