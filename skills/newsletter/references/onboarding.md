@@ -22,22 +22,30 @@ ${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status
 
 **Do NOT validate in this session.** The key is now in the keychain, but `LOOPS_API_KEY` is not yet in the environment — and the skill must never run `loops-key.sh get` at runtime to put it there (the auto-mode classifier blocks keychain-secret extraction, and it would expose the key in the transcript). Validation against `GET /v1/api-key` runs at **Step 0 of the first real run, after the shell restart below**, once the export line has sourced the key into env. Continue to "Make it available" next.
 
-**Make it available to the Loops API skill — required, not optional.** The Loops API skill reads `LOOPS_API_KEY` from the environment; without it, no API call can run. Onboarding adds one line to the user's **`~/.zprofile`** (login-sourced) so the key is read from the keychain into env at shell startup — no plaintext at rest:
+**Make it available to the Loops API skill — required, not optional.** The Loops API skill reads `LOOPS_API_KEY` from the environment; without it, no API call can run. Onboarding runs `install-line`, which appends a guarded keychain-read line to **both `~/.zprofile` and `~/.zshrc`** so the key is read from the keychain into env at shell startup — no plaintext at rest:
 
-```sh
-# added by promptmetrics-newsletter onboarding — reads the macOS Keychain at shell startup
-export LOOPS_API_KEY="$(security find-generic-password -s promptmetrics-lops-newsletter -a "$USER" -w 2>/dev/null)"
+```bash
+! ${CLAUDE_SKILL_DIR}/scripts/loops-key.sh install-line
 ```
 
-Why `~/.zprofile` and not `~/.zshrc`: Claude Code's Bash tool spawns a **login, non-interactive** zsh, which sources `~/.zprofile` (and `~/.zshenv`) but **not** `~/.zshrc` — a `~/.zshrc` export is invisible to the Bash tool, so the skill would see an empty `LOOPS_API_KEY` and fail. Why the keychain is read directly (not via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh get`): `${CLAUDE_SKILL_DIR}` is unset in the user's login shell, and the plugin's install path is version-stamped and changes on every update — a direct keychain read is path-independent and survives updates.
+It writes (macOS form — on Linux `install-line` emits the matching `secret-tool lookup …` or `pass show …` shape automatically):
 
-> Onboarding **asks for explicit confirmation** before modifying a dotfile outside the project. If the user declines, give them the line to add themselves. `.env` (gitignored, sourced from `~/.zprofile` via `set -a; source /path/to/.env; set +a`) remains a supported alternative, but stores the key in plaintext at rest — prefer the keychain line.
+```sh
+# added by promptmetrics-newsletter onboarding — reads the OS keychain at shell startup
+[ -z "$LOOPS_API_KEY" ] && export LOOPS_API_KEY="$(security find-generic-password -s promptmetrics-lops-newsletter -a "$USER" -w 2>/dev/null)"
+```
 
-**Restart the shell before continuing.** Tell the user: open a new terminal (or run `exec $SHELL -l`) so `~/.zprofile` is sourced and `LOOPS_API_KEY` lands in the environment. Validation that the key actually authenticates happens at Step 0 of the next run — do not attempt `GET /v1/api-key` here.
+Why **both** `~/.zprofile` and `~/.zshrc`: Claude Code's Bash tool spawns a **login, non-interactive** zsh, which sources `~/.zprofile` (and `~/.zshenv`) but **not** `~/.zshrc` — a `~/.zshrc`-only line is invisible to the Bash tool, so the skill would see an empty `LOOPS_API_KEY` and fail. The user's everyday **interactive, non-login** terminals source `~/.zshrc` and **not** `~/.zprofile`, so a `~/.zprofile`-only line is invisible there and the user can't run the workflow by hand from a normal terminal. Writing **both** gives full coverage, and the `[ -z "$LOOPS_API_KEY" ]` guard means a login interactive zsh (which sources both files) reads the keychain at most once. Why the keychain is read directly (not via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh get`): `${CLAUDE_SKILL_DIR}` is unset in the user's login shell, and the plugin's install path is version-stamped and changes on every update — a direct keychain read is path-independent and survives updates.
+
+Why **not** `~/.zshenv`: it runs on **every** zsh, including non-interactive scripts, so a keychain read there would fire on every shell spawn — too heavy. `~/.zprofile` + `~/.zshrc` is the right surface. (bash users on `.bash_profile`/`.bashrc`: `install-line` targets zsh dotfiles only — add the emitted line to your bash profile yourself for now.)
+
+> Onboarding **asks for explicit confirmation** before `install-line` modifies a dotfile outside the project. If the user declines, give them the line to add themselves. `.env` (gitignored, sourced from `~/.zprofile` via `set -a; source /path/to/.env; set +a`) remains a supported alternative, but stores the key in plaintext at rest — prefer the keychain line.
+
+**Restart the shell before continuing.** Tell the user: open a new terminal (or run `exec $SHELL -l`) so `~/.zprofile` (and `~/.zshrc` for interactive shells) is sourced and `LOOPS_API_KEY` lands in the environment. Validation that the key actually authenticates happens at Step 0 of the next run — do not attempt `GET /v1/api-key` here.
 
 **Security notes**
-- Storage is macOS Keychain. On Linux use `secret-tool`/`pass`; on Windows use Windows Credential Manager — `loops-key.sh` reports unsupported and exits non-zero otherwise. The `~/.zprofile` line above is macOS-specific; `loops-key.sh` is macOS-only in this version, so onboarding does **not** auto-generate the Linux/Windows equivalent yet. On those hosts, store the key with your platform's tool and export `LOOPS_API_KEY` from `~/.zprofile` manually (or use the `.env` fallback) — Linux/Windows keychain-line generation is deferred.
-- **The skill never runs `loops-key.sh get` at runtime, and never emits `LOOPS_API_KEY="$(.../loops-key.sh get)"` inline.** `get` is a manual escape hatch only (for the user to run in their own terminal, piped into an env var). The key enters the environment solely via the `~/.zprofile` line above, which runs at shell startup outside any Claude session.
+- Storage is the OS credential store — macOS `security` (Keychain); Linux `libsecret`/`secret-tool` with a `pass` (GPG) fallback; Windows Credential Manager still deferred (`loops-key.sh` reports unsupported and exits non-zero there). `install-line` emits the platform-correct keychain-read line for macOS and Linux; on Windows, store the key with your platform's tool and export `LOOPS_API_KEY` from `~/.zprofile` manually (or use the `.env` fallback).
+- **The skill never runs `loops-key.sh get` at runtime, and never emits `LOOPS_API_KEY="$(.../loops-key.sh get)"` inline.** `get` is a manual escape hatch only (for the user to run in their own terminal, piped into an env var). The key enters the environment solely via the keychain-read line `install-line` writes, which runs at shell startup outside any Claude session.
 - The skill itself only ever calls `status` (boolean) in-session. It never reads the key into the conversation.
 
 ## 2. Design system / template — the "PromptMetrics Paper" Theme
