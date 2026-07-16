@@ -1,0 +1,27 @@
+PromptMetrics Newsletter Skill
+Copyright (c) 2026 PromptMetrics — declared MIT-licensed (see the `license`
+field in .claude-plugin/marketplace.json).
+
+This repository vendors copies of the official Loops agent skills for
+zero-step install (so `/plugin install promptmetrics-newsletter@promptmetrics`
+brings them along without a separate curl/npx step). The vendored skills are
+distributed upstream under the MIT License and are reproduced here under that
+license's permission, with attribution:
+
+  Source repository : https://github.com/Loops-so/skills
+  Pinned ref        : v0.2.0
+  Upstream license  : MIT (Copyright (c) 2026 Loops)
+  Vendored skills   : skills/loops-api/
+                      skills/loops-cli/
+                      skills/loops-lmx/
+                      skills/loops-email-sending-best-practices/
+
+Each vendored SKILL.md carries a header comment pointing back to its upstream
+file for drift-tracing. Do not edit the vendored skills in place; update
+upstream and re-run the maintainer sync:
+
+    ./skills/newsletter/scripts/sync-loops-skills.sh [ref]   # default: v0.2.0
+
+Each vendored skill directory contains a copy of the upstream MIT LICENSE
+(skills/loops-{api,cli,lmx,email-sending-best-practices}/LICENSE), retaining
+the upstream "Copyright (c) 2026 Loops" notice as required by the MIT License.
