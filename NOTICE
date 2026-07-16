@@ -1,6 +1,5 @@
 PromptMetrics Newsletter Skill
-Copyright (c) 2026 PromptMetrics — declared MIT-licensed (see the `license`
-field in .claude-plugin/marketplace.json).
+Copyright (c) 2026 PromptMetrics — licensed under the MIT License (see LICENSE).
 
 This repository vendors copies of the official Loops agent skills for
 zero-step install (so `/plugin install promptmetrics-newsletter@promptmetrics`

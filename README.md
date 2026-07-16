@@ -130,7 +130,7 @@ skills/loops-api/                # vendored Loops skills (MIT, synced from Loops
 skills/loops-cli/
 skills/loops-lmx/
 skills/loops-email-sending-best-practices/
-NOTICE  .env.example  .gitignore  README.md
+NOTICE  LICENSE  .env.example  .gitignore  README.md
 ```
 
 ## Phasing
