@@ -41,7 +41,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 ### Step 0 — Onboarding & prerequisites (skill)
 
 **First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
-1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding writes a keychain-reading `export` line into `~/.zprofile` and tells the user to **restart their shell**; it does **not** validate in-session (the key is not in env until the restart). Validation runs at Step 0 below on the next run.
+1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding runs `loops-key.sh install-line` (after confirmation), which writes a guarded keychain-read `export` line to **both `~/.zprofile` and `~/.zshrc`**, and tells the user to **restart their shell**; it does **not** validate in-session (the key is not in env until the restart). Validation runs at Step 0 below on the next run.
 2. **Design system / template** — the "PromptMetrics Paper" Theme created in the Loops UI with the exact Paper token values (`references/token-map.md`), verified via `GET /v1/themes`.
 3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /v1/campaigns` that does **not** 400.
 4. **Logo** — `hero_logo_url` from a one-time `POST /v1/uploads` (3-step: create → PUT to presigned URL → complete).
@@ -49,10 +49,10 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 **Every run — verify the four prerequisites (hard gate):**
 1. Key in env: `LOOPS_API_KEY` must be present in the environment (every API call needs it as a Bearer token).
    - **Present** → validate with `GET /v1/api-key` (→ `{ success, teamName }`). **200** → tell the user the team name; proceed. **401** → key wrong/revoked → onboarding step 1 (re-enter + re-source profile + restart).
-   - **Absent but `loops-key.sh status` == `stored`** → the key is stored but the shell profile wasn't sourced. Tell the user: "Restart your shell (or run `exec $SHELL -l`) so `~/.zprofile` sources `LOOPS_API_KEY`, then re-run." **Do not** run `loops-key.sh get` to populate it. STOP.
+   - **Absent but `loops-key.sh status` == `stored`** → the key is stored but the shell profile wasn't sourced. Tell the user: "Restart your shell (or run `exec $SHELL -l`) so `~/.zprofile` and `~/.zshrc` source `LOOPS_API_KEY`, then re-run." **Do not** run `loops-key.sh get` to populate it. STOP.
    - **`status` != `stored`** → onboarding step 1.
 
-   > **Forbidden pattern.** Never emit `LOOPS_API_KEY="$(.../loops-key.sh get)" ...` inline at runtime. The auto-mode classifier blocks keychain-secret extraction, and it exposes the key in the transcript. The key enters env only via the `~/.zprofile` line at shell startup.
+   > **Forbidden pattern.** Never emit `LOOPS_API_KEY="$(.../loops-key.sh get)" ...` inline at runtime. The auto-mode classifier blocks keychain-secret extraction, and it exposes the key in the transcript. The key enters env only via the guarded keychain-read line that `loops-key.sh install-line` writes to `~/.zprofile` and `~/.zshrc` at shell startup. (`install-line` itself is allowed — it writes a **static** read command, not the key value, so it is not `get` and does not trip the classifier.)
 2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
 3. "PromptMetrics Paper" Theme exists (`GET /v1/themes`). Missing → onboarding step 2.
 4. `hero_logo_url` known. Missing → onboarding step 4.

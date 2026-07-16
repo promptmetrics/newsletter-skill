@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.1) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.2.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -30,7 +30,7 @@ The four Loops skills (API / LMX / CLI / email) are **vendored** in `skills/loop
 ### Per-machine prerequisites (either install path)
 
 One thing no install scope can provide for you — each machine needs it once:
-1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). Onboarding then adds a `~/.zprofile` export that reads the keychain at shell startup and asks you to **restart your shell**; Step 0 validates the key on the next run. See onboarding (`skills/newsletter/references/onboarding.md`).
+1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS Keychain via `security`; on Linux via `secret-tool`/libsecret with a `pass` fallback). Onboarding then runs `./skills/newsletter/scripts/loops-key.sh install-line`, which writes a guarded keychain-read line to **both `~/.zprofile` and `~/.zshrc`** so it's sourced by login non-interactive zsh (the Bash tool) and interactive terminals alike, and asks you to **restart your shell**; Step 0 validates the key on the next run. See onboarding (`skills/newsletter/references/onboarding.md`).
 
 The Loops skills themselves ship bundled with the plugin (see "Vendored Loops skills" below) — no per-machine step for them. The first run walks you through the rest (design system/Theme, from address) via onboarding.
 
@@ -65,16 +65,17 @@ The skill checks for these at Step 0 and will stop if missing.
    - Document-level `<meta name="color-scheme" content="light dark">`
 3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
 4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /v1/lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
-5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
+5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain via `security`; Linux `secret-tool`/libsecret with a `pass` fallback), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
    ```
-   ./skills/newsletter/scripts/loops-key.sh set      # types the key silently
-   ./skills/newsletter/scripts/loops-key.sh status    # -> stored
+   ./skills/newsletter/scripts/loops-key.sh set           # types the key silently
+   ./skills/newsletter/scripts/loops-key.sh status        # -> stored
+   ./skills/newsletter/scripts/loops-key.sh install-line  # writes the keychain-read line
    ```
-   To make it available to the Loops API skill, onboarding adds a keychain-reading export to your **`~/.zprofile`** (login-sourced — Claude Code's Bash tool does not source `~/.zshrc`), with your confirmation:
+   To make it available to the Loops API skill, `install-line` writes a guarded keychain-read export to **both `~/.zprofile` and `~/.zshrc`** (login non-interactive zsh — the Bash tool — sources `~/.zprofile`; your interactive terminals source `~/.zshrc`; the `[ -z ]` guard reads the keychain at most once), with your confirmation. The macOS line it writes:
    ```sh
-   export LOOPS_API_KEY="$(security find-generic-password -s promptmetrics-lops-newsletter -a "$USER" -w 2>/dev/null)"
+   [ -z "$LOOPS_API_KEY" ] && export LOOPS_API_KEY="$(security find-generic-password -s promptmetrics-lops-newsletter -a "$USER" -w 2>/dev/null)"
    ```
-   Then **restart your shell** (`exec $SHELL -l`) so it's sourced. Step 0 validates the key with `GET /v1/api-key` on the next run. The skill never runs `loops-key.sh get` at runtime. `.env` (gitignored, sourced from `~/.zprofile`) is a plaintext-at-rest alternative.
+   On Linux it emits the matching `secret-tool lookup …` (or `pass show …`) shape. Then **restart your shell** (`exec $SHELL -l`) so it's sourced. Step 0 validates the key with `GET /v1/api-key` on the next run. The skill never runs `loops-key.sh get` at runtime (install-line writes a static read command, not the key). `.env` (gitignored, sourced from `~/.zprofile`) is a plaintext-at-rest alternative.
 
 ## Who can send
 
@@ -139,7 +140,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.1)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.2.0)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 
