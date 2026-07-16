@@ -4,7 +4,7 @@ Three checks run in Step 6, after Gate 1 approval, before the list-confirm + Gat
 
 ## 6a. Loops Guardian (delegate to the Loops API skill)
 
-`GET /email-messages/{id}/guardian`
+`GET /v1/email-messages/{id}/guardian`
 
 **Covers (structural only):**
 - Link integrity against the email's known link set

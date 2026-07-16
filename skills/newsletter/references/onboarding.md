@@ -20,6 +20,13 @@ The key is **never** written to a repo file, passed as a CLI argument, logged, o
 ${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status
 ```
 
+**Validate against the API** — presence alone is not enough; the key must actually authenticate. Delegate `GET /v1/api-key` to the Loops API skill (Bearer auth, base `https://app.loops.so/api`).
+
+- **200** → `{ success: true, teamName: "…" }`. The key is valid; onboarding is complete for this step. Tell the user the team name as confirmation.
+- **401** → the key is wrong, typo'd, or revoked. Do **not** proceed. Have the user re-enter it: `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh set`, then re-validate. Loop until 200.
+
+This is the gate that catches a bad key *before* Step 0's other checks run. A key that's merely present but invalid would otherwise fail confusingly at `GET /v1/themes` later.
+
 **Make it available to the Loops API skill.** The Loops API skill reads `LOOPS_API_KEY` from the environment. Onboarding offers to add one line to the user's shell profile (`~/.zshrc`, etc.) so the key is sourced from the keychain into env at shell startup — no plaintext at rest:
 
 ```sh
@@ -53,16 +60,22 @@ Loops Themes are **read-only via API**, so the Theme is built once in the Loops 
 | H1 / H2 / H3 / body sizes | 32 / 24 / 20 / 16 |
 | Document meta | `color-scheme: light dark` |
 
-**Verify**: `GET /themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Paper"`. Loop until present.
+**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Paper"`. Loop until present.
 
 ## 3. From address — sending domain + fromName / fromEmail
 
-`POST /campaigns` **400s** if the sending domain or `fromName`/`fromEmail` aren't configured. Onboarding guides the user through Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"PromptMetrics Field Notes"`) and `fromEmail` (e.g. `fieldnotes@<verified-domain>`).
+`POST /v1/campaigns` **400s** if the sending domain or `fromName`/`fromEmail` aren't configured. Onboarding guides the user through Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"PromptMetrics Field Notes"`) and `fromEmail` (e.g. `fieldnotes@<verified-domain>`).
 
-**Verify**: a dry `POST /campaigns { name:"onboarding-check" }` returns a campaign (not 400). A 400 → domain/from unconfigured; loop back. Delete the throwaway campaign afterward.
+**Verify**: a dry `POST /v1/campaigns { name:"onboarding-check" }` returns a campaign (not 400). A 400 → domain/from unconfigured; loop back. Delete the throwaway campaign afterward.
 
 ## 4. Logo — hero_logo_url
 
-One-time `POST /uploads` (Loops API skill) of the **dark-mode-safe** logo variant (reverse pinwheel in a fixed-color chip). Store the returned Loops-hosted URL as `hero_logo_url` (in the brief or project config). Step 0 fail-stops if absent.
+One-time logo upload (Loops API skill) of the **dark-mode-safe** variant (reverse pinwheel in a fixed-color chip). Uploads are a **3-step flow** against base `https://app.loops.so/api`:
+
+1. `POST /v1/uploads` → returns a `presignedUrl` and an upload `id`.
+2. `PUT` the logo file bytes to the `presignedUrl`.
+3. `POST /v1/uploads/{id}/complete` → returns the public hosted URL.
+
+Store that URL as `hero_logo_url` (in the brief or project config). Step 0 fail-stops if absent.
 
 **Verify**: the returned URL is a non-empty `https://...` string the user records for use in briefs.

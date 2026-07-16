@@ -55,7 +55,7 @@ A cross-marketplace plugin `dependencies` declaration (`allowCrossMarketplaceDep
 
 The skill checks for these at Step 0 and will stop if missing.
 
-1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`.
+1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`.
 2. **Create the "PromptMetrics Paper" Theme** — Loops UI → Themes → New. Themes are **read-only via API**, so this is manual. Set:
    - Background `#f4efe7`, text base `#1c1c1c`, link color `#a1482a`
    - Button background `#d97757`, button text `#2a160e`, button radius `999`
@@ -63,8 +63,8 @@ The skill checks for these at Step 0 and will stop if missing.
    - Fonts: headings `Fraunces, ui-serif, Georgia, serif`; body `Inter, ui-sans-serif, Arial, sans-serif`; labels `JetBrains Mono, ui-monospace, Consolas, monospace`
    - Heading sizes: H1 32 / H2 24 / H3 20 / body 16
    - Document-level `<meta name="color-scheme" content="light dark">`
-3. **Upload the logo** — via `POST /uploads` (Loops API skill) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
-4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
+3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
+4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /v1/lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
 5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
    ```
    ./skills/newsletter/scripts/loops-key.sh set      # types the key silently
@@ -81,20 +81,20 @@ The current user is resolved from `NEWSLETTER_SENDER` env → git `user.email` �
 ## How it works (the loop)
 
 1. **Collect brief** — interview (default), freeform paste, or Notion DB (1b). Gap-collect against the 6 required fields (`references/brief-schema.md`).
-2. **Create draft campaign** — `POST /campaigns`.
+2. **Create draft campaign** — `POST /v1/campaigns`.
 3. **Assemble LMX** — fill the 12-section master template (`references/lmx-master-template.md`) against the Paper token map (`references/token-map.md`); expand `key_points[]`/`body_blocks[]`; enforce the 100KB cap.
-4. **Set email content** — `POST /email-messages/{id}` with the `lmx` payload only.
+4. **Set email content** — `POST /v1/email-messages/{id}` with the `lmx` payload only.
 5. **Gate 1 — preview** — send to the author; **STOP** for approval (check Apple Mail + Gmail, light + dark).
 6. **Pre-send checks** — Loops Guardian + the skill's own spam scan (`references/spam-terms.md`) + live broken-link check.
-7. **List confirm** — `GET /lists` (names only).
+7. **List confirm** — `GET /v1/lists` (names only).
 8. **Gate 2 — confirm send** — **STOP**; allowlist check; `scheduling` still unset.
-9. **Send** — `POST /campaigns/{id} { scheduling:{method:"now"} }` only after an explicit "send".
+9. **Send** — `POST /v1/campaigns/{id} { scheduling:{method:"now"} }` only after an explicit "send".
 
 Full procedure: `skills/newsletter/SKILL.md`. Endpoint contracts: `skills/newsletter/references/loops-endpoints.md`.
 
 ## Verification (end-to-end)
 
-See the "Verification" section of `loops-api-verification-and-template-design.md`. In short: confirm the Theme exists via `GET /themes`; dry-create a campaign + set a minimal LMX (`<Style themeId/><Paragraph>test</Paragraph>`) → expect 200 not 409; preview a full mixed-issue LMX and open in Apple Mail + Gmail (light/dark); plant a spam term + a 404 link to confirm the gap-fillers fire; confirm `scheduling` is unset through both gates and the campaign moves Draft → Sent only after Gate 2; confirm a max-length issue (5 cards + 8 paragraphs) assembles under 100KB.
+See the "Verification" section of `loops-api-verification-and-template-design.md`. In short: confirm the API key via `GET /v1/api-key` (→ `{ success, teamName }`); confirm the Theme exists via `GET /v1/themes`; dry-create a campaign + set a minimal LMX (`<Style themeId/><Paragraph>test</Paragraph>`) → expect 200 not 409; preview a full mixed-issue LMX and open in Apple Mail + Gmail (light/dark); plant a spam term + a 404 link to confirm the gap-fillers fire; confirm `scheduling` is unset through both gates and the campaign moves Draft → Sent only after Gate 2; confirm a max-length issue (5 cards + 8 paragraphs) assembles under 100KB.
 
 ## Decisions baked in (change if needed)
 

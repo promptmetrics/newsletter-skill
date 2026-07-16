@@ -101,7 +101,7 @@ All hex values are inlined per `token-map.md`. Fonts come from the Theme, not pe
 
 | Slot | Source (brief) | Type | Notes |
 |---|---|---|---|
-| `hero_logo_url` | `hero_logo_url` (brief; sourced from the one-time `POST /uploads`) | string | Dark-mode-safe variant; Step 0 fail-stops if absent |
+| `hero_logo_url` | `hero_logo_url` (brief; sourced from the one-time `POST /v1/uploads`) | string | Dark-mode-safe variant; Step 0 fail-stops if absent |
 | `masthead_label` | `masthead_label` | string | Default `"FIELD NOTES"` |
 | `issue_number` | `issue_metadata.issue_number` | string | |
 | `kicker` | `kicker` | string | Mono uppercase |
@@ -139,7 +139,7 @@ Message-level fields (not in LMX): `subject`, `previewText` (from `preview_text`
 
 ## 100KB cap (API) / 102KB (Gmail clip)
 
-Measure the final assembled LMX string **after assembly, before `POST /email-messages`**. If over:
+Measure the final assembled LMX string **after assembly, before `POST /v1/email-messages`**. If over:
 1. Cap body paragraphs at 8. If over, truncate and append:
    `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>`
 2. If still over, reduce key-point cards to 3 and trim descriptions.

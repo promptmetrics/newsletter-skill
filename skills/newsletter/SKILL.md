@@ -41,15 +41,15 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 ### Step 0 — Onboarding & prerequisites (skill)
 
 **First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
-1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`).
-2. **Design system / template** — the "PromptMetrics Paper" Theme created in the Loops UI with the exact Paper token values (`references/token-map.md`), verified via `GET /themes`.
-3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /campaigns` that does **not** 400.
-4. **Logo** — `hero_logo_url` from a one-time `POST /uploads`.
+1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding then **validates** the key with `GET /v1/api-key` (→ `{ success, teamName }`); a 401 sends the user back to re-enter it.
+2. **Design system / template** — the "PromptMetrics Paper" Theme created in the Loops UI with the exact Paper token values (`references/token-map.md`), verified via `GET /v1/themes`.
+3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /v1/campaigns` that does **not** 400.
+4. **Logo** — `hero_logo_url` from a one-time `POST /v1/uploads` (3-step: create → PUT to presigned URL → complete).
 
 **Every run — verify the four prerequisites (hard gate):**
 1. Key present: `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh status` == `stored` **or** `LOOPS_API_KEY` in env. Missing → onboarding step 1.
 2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
-3. "PromptMetrics Paper" Theme exists (`GET /themes`). Missing → onboarding step 2.
+3. "PromptMetrics Paper" Theme exists (`GET /v1/themes`). Missing → onboarding step 2.
 4. `hero_logo_url` known. Missing → onboarding step 4.
 
 No key, no Theme, no logo → no run. Onboarding is idempotent — re-run only what's missing.
@@ -65,7 +65,7 @@ Whatever the source, check the brief against the required-fields contract and **
 If optional fields are absent, draft them: `subject` / `preview_text` / `headline` / `emphasis_word` / `lede` from `goal` + `key_points[0]`; `read_time` from body length; `cta_headline` from `goal`; `cta_supporting` from `key_points[0].description`. These are approved at Gate 1. Split `headline` at `emphasis_word` into `headline_before_em` / `emphasis_word` / `headline_after_em` (exactly one emphasis word).
 
 ### Step 2 — Create draft campaign (delegate → Loops API skill)
-`POST /campaigns { name, mailingListId? }` (see `loops-endpoints.md`).
+`POST /v1/campaigns { name, mailingListId? }` (see `loops-endpoints.md`).
 Capture `campaignId`, `emailMessageId`, `emailMessageContentRevisionId`.
 A **400** → sending domain / `fromName` / `fromEmail` unconfigured in Loops → stop; point to README one-time setup step 1.
 
@@ -82,10 +82,10 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 8. **100KB cap** — measure the final string. Over → trim body to 8 paragraphs + append `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>` → reduce cards to 3 + trim descriptions → if still over, **fail** with "Issue content exceeds 100KB even after trimming. Reduce body length or move content to a web link." Do not call the API.
 
 ### Step 4 — Set email content (delegate → Loops API skill)
-`POST /email-messages/{emailMessageId}` with `expectedRevisionId, subject, previewText, fromName, fromEmail, replyToEmail, emailFormat:"styled", languageCode:"en", lmx` (the assembled string), `contactPropertiesFallbacks:{firstName:"there"}`. **`lmx` field only — no HTML.** (See `loops-endpoints.md` for 409/400 handling.)
+`POST /v1/email-messages/{emailMessageId}` with `expectedRevisionId, subject, previewText, fromName, fromEmail, replyToEmail, emailFormat:"styled", languageCode:"en", lmx` (the assembled string), `contactPropertiesFallbacks:{firstName:"there"}`. **`lmx` field only — no HTML.** (See `loops-endpoints.md` for 409/400 handling.)
 
 ### Step 5 — Gate 1: Preview (delegate + skill STOP)
-`POST /email-messages/{id}/preview { emails:[author_email], contactProperties:{firstName:author_first_name} }`. Then **STOP**.
+`POST /v1/email-messages/{id}/preview { emails:[author_email], contactProperties:{firstName:author_first_name} }`. Then **STOP**.
 
 > **GATE 1 — STOP.** "Preview sent to {author_email}. Open it in **Apple Mail (light + dark)** and **Gmail (light + dark)**. Check: Fraunces loads on Apple / Georgia fallback on Gmail; 18px cards (square in Outlook Classic is expected); italic-coral emphasis word renders coral; coral top-bar visible; CTA button ≥44px; no Gmail clipping. Subject + preview text are approved here. Reply **approved** to continue, or **revise** with changes."
 >
@@ -93,14 +93,14 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 
 ### Step 6 — Pre-send checks (delegate + skill)
 After Gate 1 approval, run three checks in sequence (see `references/guardian-checklist.md`):
-1. **Loops Guardian** (delegate): `GET /email-messages/{id}/guardian` — structural link/variable/fallback checks.
+1. **Loops Guardian** (delegate): `GET /v1/email-messages/{id}/guardian` — structural link/variable/fallback checks.
 2. **Spam scan** (skill): lowercase subject + preview + stripped body text; match `references/spam-terms.md` + the brief's `tone.must_avoid[]`. Output flagged terms with category + context + location. Advisory.
 3. **Broken-link check** (skill): extract `href`/`src` URLs from the LMX; dedupe; HEAD each (GET fallback on 405); 10s timeout; max ~3 concurrent. Flag 4xx/5xx/timeout. Advisory (harder than spam).
 
 Collect all three. **Do not auto-proceed past failures** — present them; the author fixes (→ re-run Step 6) or explicitly acknowledges before Gate 2.
 
 ### Step 7 — List confirm (delegate → Loops API skill)
-`GET /lists` → `[{ id, name, description, isPublic }]`. Present the lists. **No contact count via API** — show `name` only and tell the user to verify the count in the Loops UI.
+`GET /v1/lists` → `[{ id, name, description, isPublic }]`. Present the lists. **No contact count via API** — show `name` only and tell the user to verify the count in the Loops UI.
 
 ### Step 8 — Gate 2: Confirm send (skill STOP — the irreversible step)
 Resolve the current user (see `references/senders.md`): `NEWSLETTER_SENDER` env → git `user.email` → session identity. Check against the `senders:` allowlist (env `NEWSLETTER_SENDERS` overrides the file). Then **STOP**.
@@ -116,7 +116,7 @@ Resolve the current user (see `references/senders.md`): `NEWSLETTER_SENDER` env 
 > **`scheduling` is STILL UNSET.** Do not set it yet.
 
 ### Step 9 — Send (delegate, ONLY after explicit "send" at Gate 2)
-`POST /campaigns/{campaignId} { scheduling:{method:"now"} }` (see `loops-endpoints.md`). This is the **only** place `scheduling` is set. Confirm the campaign moves Draft → Sent. Log who sent (email + timestamp).
+`POST /v1/campaigns/{campaignId} { scheduling:{method:"now"} }` (see `loops-endpoints.md`). This is the **only** place `scheduling` is set. Confirm the campaign moves Draft → Sent. Log who sent (email + timestamp).
 
 ## Delegation summary
 

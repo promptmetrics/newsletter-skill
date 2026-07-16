@@ -27,7 +27,7 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 | `read_time` | number | If absent, skill estimates from body length |
 | `hero_image_url` | string | If absent, template §7 omitted |
 | `hero_image_alt` | string | **Required if `hero_image_url` is present** — gap-collect asks for it |
-| `hero_logo_url` | string | Masthead logo URL (one-time `POST /uploads` result). If absent → Step 0 stops and points to README one-time setup step 3 |
+| `hero_logo_url` | string | Masthead logo URL (one-time `POST /v1/uploads` result). If absent → Step 0 stops and points to README one-time setup step 3 |
 | `cta_headline` | string | If absent, skill drafts from `goal` |
 | `cta_supporting` | string | If absent, skill drafts from `key_points[0].description` |
 | `body_blocks` | array | LMX fragment strings (`<Paragraph>`/`<H2>`/`<UnorderedList>`/`<Quote>`); the editorial core |
@@ -47,7 +47,7 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 2. For each **missing required field**, ask one targeted question.
 3. Do **not** ask about optional fields unless structurally needed (e.g. `hero_image_url` present but `hero_image_alt` missing → ask for alt text).
 4. In interview mode (empty input), walk through all 6 required fields in order, then offer to capture optional fields.
-5. Output a complete brief object with all required fields populated before proceeding to `POST /campaigns`.
+5. Output a complete brief object with all required fields populated before proceeding to `POST /v1/campaigns`.
 
 ## Example brief object (synthetic)
 
