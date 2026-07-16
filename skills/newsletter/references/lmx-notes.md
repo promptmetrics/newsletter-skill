@@ -1,6 +1,6 @@
 # LMX Notes — Gotchas
 
-Loops Markup eXpressions: a **closed, PascalCase, case-sensitive** XML component language. Unknown tags are rejected. There is **no raw-HTML escape hatch** — the `lmx` field on `POST /email-messages/{id}` accepts only LMX; Loops' engine renders it to client-safe HTML.
+Loops Markup eXpressions: a **closed, PascalCase, case-sensitive** XML component language. Unknown tags are rejected. There is **no raw-HTML escape hatch** — the `lmx` field on `POST /v1/email-messages/{id}` accepts only LMX; Loops' engine renders it to client-safe HTML.
 
 ## No loops or conditionals
 LMX has no `for`/`if`. Expand arrays yourself:

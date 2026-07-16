@@ -2,7 +2,7 @@
 
 > **Placeholder.** Replace the emails below with the real team before first send. The env var `NEWSLETTER_SENDERS` (comma-separated emails) overrides this file if set.
 
-The skill checks this allowlist at **Gate 2** (Step 8), before `POST /campaigns/{id}` with `scheduling.method:"now"`. If the current user is not authorized, the skill **refuses to send** even if the user says "send".
+The skill checks this allowlist at **Gate 2** (Step 8), before `POST /v1/campaigns/{id}` with `scheduling.method:"now"`. If the current user is not authorized, the skill **refuses to send** even if the user says "send".
 
 Two roles. If your team uses the same people for both, list them under `senders:` only and leave `approvers:` empty (an empty `approvers:` section means anyone can approve the preview at Gate 1, but only `senders:` can fire).
 
