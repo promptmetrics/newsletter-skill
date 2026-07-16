@@ -2,11 +2,13 @@
 
 The exact endpoints the newsletter workflow calls, with required fields and gotchas. **Delegate these to the installed Loops API skill** — do not hand-roll `curl`/auth/retry. The Loops API skill uses `LOOPS_API_KEY` (Bearer) against base `https://app.loops.so/api`, 10 req/s. **Every path below is `/v1/…` relative to that base** (e.g. `GET /v1/themes` → `https://app.loops.so/api/v1/themes`). OpenAPI: `app.loops.so/openapi.yaml`.
 
+**All calls use `$LOOPS_API_KEY` from the environment**, populated by the `~/.zprofile` keychain export at shell startup (see `onboarding.md`). **Never extract the key with `loops-key.sh get` at runtime** — the auto-mode classifier blocks keychain-secret extraction and it leaks the key into the transcript. If `LOOPS_API_KEY` is unset, stop and tell the user to restart their shell; do not run `get`.
+
 Confirm exact tool names against the installed Loops API skill's `SKILL.md` and update this file if they differ.
 
-## Auth — verify the API key (run this first, right after the key is stored)
+## Auth — verify the API key (run this at Step 0, once `LOOPS_API_KEY` is in env)
 `GET /v1/api-key` → `{ success: true, teamName: "…" }`.
-Use this to confirm the key is valid before doing anything else (onboarding step 1). **401** → the key is wrong or revoked; have the user re-enter it via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh set`. Do not proceed to Step 0 until this returns 200.
+Use this to confirm the key is valid before doing anything else. It runs at **Step 0 of the first real run, after the post-onboarding shell restart** (the key is not in env during the onboarding session itself, so validation cannot run there). **401** → the key is wrong or revoked; have the user re-enter it via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh set`, re-source `~/.zprofile`, restart, and re-run. Do not proceed past Step 0 until this returns 200.
 
 ## Step 0 — prerequisites
 `GET /v1/themes` → list themes; look for `name == "PromptMetrics Paper"`. If missing, stop (one-time UI setup in README).

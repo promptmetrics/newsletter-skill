@@ -30,7 +30,7 @@ The four Loops skills (API / LMX / CLI / email) are **vendored** in `skills/loop
 ### Per-machine prerequisites (either install path)
 
 One thing no install scope can provide for you — each machine needs it once:
-1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). See onboarding (`skills/newsletter/references/onboarding.md`).
+1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS). Onboarding then adds a `~/.zprofile` export that reads the keychain at shell startup and asks you to **restart your shell**; Step 0 validates the key on the next run. See onboarding (`skills/newsletter/references/onboarding.md`).
 
 The Loops skills themselves ship bundled with the plugin (see "Vendored Loops skills" below) — no per-machine step for them. The first run walks you through the rest (design system/Theme, from address) via onboarding.
 
@@ -70,7 +70,11 @@ The skill checks for these at Step 0 and will stop if missing.
    ./skills/newsletter/scripts/loops-key.sh set      # types the key silently
    ./skills/newsletter/scripts/loops-key.sh status    # -> stored
    ```
-   To make it available to the Loops API skill, onboarding offers to add `export LOOPS_API_KEY="$(./skills/newsletter/scripts/loops-key.sh get)"` to your shell profile (with your confirmation). `.env` (gitignored) remains a supported alternative.
+   To make it available to the Loops API skill, onboarding adds a keychain-reading export to your **`~/.zprofile`** (login-sourced — Claude Code's Bash tool does not source `~/.zshrc`), with your confirmation:
+   ```sh
+   export LOOPS_API_KEY="$(security find-generic-password -s promptmetrics-lops-newsletter -a "$USER" -w 2>/dev/null)"
+   ```
+   Then **restart your shell** (`exec $SHELL -l`) so it's sourced. Step 0 validates the key with `GET /v1/api-key` on the next run. The skill never runs `loops-key.sh get` at runtime. `.env` (gitignored, sourced from `~/.zprofile`) is a plaintext-at-rest alternative.
 
 ## Who can send
 
