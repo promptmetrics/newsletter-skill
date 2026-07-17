@@ -42,19 +42,20 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 **First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
 1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding runs `loops-key.sh install-line` (after confirmation), which writes a guarded keychain-read `export` line to **both `~/.zprofile` and `~/.zshrc`**, and tells the user to **restart their shell**; it does **not** validate in-session (the key is not in env until the restart). Validation runs at Step 0 below on the next run.
-2. **Design system / template** — the "PromptMetrics Paper" Theme created in the Loops UI with the exact Paper token values (`references/token-map.md`), verified via `GET /v1/themes`.
+2. **Design system / template** — the "PromptMetrics Paper" Theme, created-or-verified via the API (not manual-only): `GET /v1/themes` (paginated; page with `perPage` + `nextCursor` until found). If a theme with `name=="PromptMetrics Paper"` exists, capture its `id`. If missing, `POST /v1/themes` with the Paper token values (`references/token-map.md`) and capture the returned `id`. The manual Loops UI path (Themes → New theme) is the **fallback** if the API path fails (e.g. Content API not enabled).
 3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /v1/campaigns` that does **not** 400.
 4. **Logo** — `hero_logo_url` from a one-time `POST /v1/uploads` (3-step: create → PUT to presigned URL → complete).
 
 **Every run — verify the four prerequisites (hard gate):**
 1. Key in env: `LOOPS_API_KEY` must be present in the environment (every API call needs it as a Bearer token).
    - **Present** → validate with `GET /v1/api-key` (→ `{ success, teamName }`). **200** → tell the user the team name; proceed. **401** → key wrong/revoked → onboarding step 1 (re-enter + re-source profile + restart).
+   - **Content API 401 (distinct from the above).** A **401** on `POST /v1/campaigns`, `POST /v1/email-messages/{id}`, `GET/POST /v1/themes`, or `POST /v1/uploads` with an otherwise-valid key means the team's **Content API is not enabled** — not that the key is wrong. Point the user to **Loops Settings** to enable the Content API; do not send them back to key re-entry.
    - **Absent but `loops-key.sh status` == `stored`** → the key is stored but the shell profile wasn't sourced. Tell the user: "Restart your shell (or run `exec $SHELL -l`) so `~/.zprofile` and `~/.zshrc` source `LOOPS_API_KEY`, then re-run." **Do not** run `loops-key.sh get` to populate it. STOP.
    - **`status` != `stored`** → onboarding step 1.
 
    > **Forbidden pattern.** Never emit `LOOPS_API_KEY="$(.../loops-key.sh get)" ...` inline at runtime. The auto-mode classifier blocks keychain-secret extraction, and it exposes the key in the transcript. The key enters env only via the guarded keychain-read line that `loops-key.sh install-line` writes to `~/.zprofile` and `~/.zshrc` at shell startup. (`install-line` itself is allowed — it writes a **static** read command, not the key value, so it is not `get` and does not trip the classifier.)
 2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
-3. "PromptMetrics Paper" Theme exists (`GET /v1/themes`). Missing → onboarding step 2.
+3. "PromptMetrics Paper" Theme exists and its `id` captured: `GET /v1/themes` (paginated — follow `pagination.nextCursor` with `perPage` up to 50) → find `data[].id` where `name=="PromptMetrics Paper"`. Store as `{{theme_id}}` for Step 3.4. Missing → onboarding step 2 (which will `POST /v1/themes` to create it and capture the new `id`).
 4. `hero_logo_url` known. Missing → onboarding step 4.
 
 No key, no Theme, no logo → no run. Onboarding is idempotent — re-run only what's missing.
@@ -80,10 +81,10 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 1. Build the variable map from the brief (see the template's "Variable slots" table).
 2. Expand `key_points[]`: for each element, emit the §8 card `<Section>` block with `{kp_number (zero-padded), kp_title, kp_description, kp_link_url?, kp_link_label?}`. **Default 3 cards, max 5.** Fewer than 3 → ask the author whether to pad or ship fewer (don't silently pad). More than 5 → truncate to first 5 and warn. Include the `<Text><Link>` line **only if** `link_url` is non-empty.
 3. Expand `body_blocks[]`: validate each fragment (PascalCase tag, properly closed) — reject and ask the author to fix if invalid — then concatenate in array order inside the §9 `<Section>`.
-4. Inject `<Style themeId="promptmetrics-paper" backgroundColor="#f4efe7" bodyPadding="24"/>` as the **first line**.
+4. Inject `<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>` as the **first line**, where `{{theme_id}}` is the id captured in Step 0 (`GET /v1/themes` → `data[].id` where `name=="PromptMetrics Paper"`). The committed `themeId` form (opaque id vs. theme name `"PromptMetrics Paper"`) is decided by the empirical A/B test documented in `loops-api-verification-and-template-design.md` ("Verification") — do not assert a form here.
 5. Strip optional blocks: §7 (hero) if `hero_image_url` empty; §10 (callout) if `prompt_quote` empty; the attribution `<Text>` if `prompt_attribution` empty.
 6. Emit the italic-coral emphasis as `<H1><Text>…</Text><Em><Text color="#a1482a">{{emphasis_word}}</Text></Em><Text>…</Text></H1>` (verify in preview; fallback coral `<Text>` without italic).
-7. Emit the 3px coral top-bar as a coral `<Divider thickness="3">` first child inside card `<Section>`s (card `padding="0"`; inner `<Section>` re-pads — 20 for key-point cards, 16 for hero, 24 for CTA — see template).
+7. Emit the 3px coral top-bar as a coral `<Divider thickness="3">` first child inside card `<Section>`s (card `padding="0"`; inner `<Section>` re-pads via `<Style bodyXPadding bodyYPadding>` — 20 for key-point cards, 16 for hero, 24 for CTA — see template). `bodyPadding` is **not** a valid `<Style>`/ThemeStyles attribute; always use the X/Y pair.
 8. **100KB cap** — measure the final string. Over → trim body to 8 paragraphs + append `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>` → reduce cards to 3 + trim descriptions → if still over, **fail** with "Issue content exceeds 100KB even after trimming. Reduce body length or move content to a web link." Do not call the API.
 
 ### Step 4 — Set email content (delegate → Loops API skill)

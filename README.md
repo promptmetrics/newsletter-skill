@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.2.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.2.1) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -55,8 +55,8 @@ A cross-marketplace plugin `dependencies` declaration (`allowCrossMarketplaceDep
 
 The skill checks for these at Step 0 and will stop if missing.
 
-1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`.
-2. **Create the "PromptMetrics Paper" Theme** — Loops UI → Themes → New. Themes are **read-only via API**, so this is manual. Set:
+1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`. (Note: the `fromEmail` configured here is the **full sending address** in the Loops UI. It is a **separate concept** from the `fromEmail` field the skill sends in `POST /v1/email-messages/{id}` — that API field is **username only** (e.g. `fieldnotes`, no `@`, no domain); Loops appends the verified sending domain automatically. Keep the UI value and the API value in sync: same username, domain lives only in the UI.)
+2. **Create the "PromptMetrics Paper" Theme** — Loops UI → Themes → New. The theme can now also be **auto-created via the API** (`POST /v1/themes`, writable) during onboarding, falling back to manual UI creation if the API call fails. The manual values below are the **fallback spec** (also useful for reference / auditing the API-created theme). Set:
    - Background `#f4efe7`, text base `#1c1c1c`, link color `#a1482a`
    - Button background `#d97757`, button text `#2a160e`, button radius `999`
    - Card radius `18`, body padding `24`
@@ -140,7 +140,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.2.0)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.2.1)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 

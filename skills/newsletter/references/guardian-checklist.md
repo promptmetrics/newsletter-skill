@@ -4,17 +4,23 @@ Three checks run in Step 6, after Gate 1 approval, before the list-confirm + Gat
 
 ## 6a. Loops Guardian (delegate to the Loops API skill)
 
-`GET /v1/email-messages/{id}/guardian`
+`GET /v1/email-messages/{id}/guardian` → `{errors:[GuardianRule], warnings:[GuardianRule]}`
 
-**Covers (structural only):**
-- Link integrity against the email's known link set
-- Merge-variable / `{contact.*}` references resolve
-- Required fallbacks present (e.g. `contactPropertiesFallbacks`)
-- Structural LMX validity
+**Covers — the `GuardianRule.rule` enum (variables / fallbacks / links):**
+- `missingButtonHrefs` / `invalidButtonHrefs` — `<Button>` missing or malformed `href`
+- `missingLinkHrefs` / `invalidLinkHrefs` — `<Link>` missing or malformed `href`
+- `missingFallbackContactProperties` — `{contact.*}` used without a `contactPropertiesFallbacks` entry
+- `unsupportedContactProperties` — `{contact.*}` reference not recognized by the API
+- (other rules in the `rule` enum as Loops adds them — variables, fallbacks, links only)
+
+**Two severities, two outcomes:**
+- `errors[]` → **BLOCKING.** Publishing is blocked; map to **FAIL** at Gate 2. Author must fix + re-run Step 6.
+- `warnings[]` → **advisory.** Map to **PASS with warnings** at Gate 2; author acknowledges.
 
 **Does NOT cover (this is why the skill adds 6b + 6c):**
 - ❌ Spam-trigger words
-- ❌ Live HTTP broken-link verification (Guardian checks structure, not whether the URL actually returns 2xx)
+- ❌ Live HTTP broken-link verification (Guardian checks href structure, not whether the URL actually returns 2xx)
+- ❌ Structural LMX validity — enforced at write time (`POST /v1/email-messages/{id}` returns 422 on unparseable LMX, 413 over 100KB), so it cannot reach Guardian in a broken state
 
 ## 6b. Spam-trigger-word scan (skill does this)
 
@@ -34,9 +40,9 @@ Three checks run in Step 6, after Gate 1 approval, before the list-confirm + Gat
 
 ```
 Pre-send checks:
-  Loops Guardian:  {PASS | FAIL: <issues>}
+  Loops Guardian:  {PASS | PASS with warnings: <rules> | FAIL: <rules>}
   Spam scan:       {PASS | N warnings: <flagged terms>}
   Broken links:    {PASS | N broken: <urls + statuses>}
 ```
 
-If Guardian fails → structural issue (missing fallback, broken variable, invalid LMX); recommend fixing before send. If spam flags → advisory. If links broken → recommend fixing. The author explicitly acknowledges each non-PASS check (or fixes + re-runs Step 6) before saying "send" at Gate 2.
+Guardian outcomes map from the response shape: `errors[]` → **FAIL** (blocking, fix + re-run Step 6); `warnings[]` → **PASS with warnings** (author acknowledges); empty → **PASS**. If spam flags → advisory. If links broken → recommend fixing. The author explicitly acknowledges each non-PASS check (or fixes + re-runs Step 6) before saying "send" at Gate 2.

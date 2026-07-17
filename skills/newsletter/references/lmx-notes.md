@@ -40,7 +40,7 @@ Render only in Apple Mail / Samsung / Comcast. Gmail / Outlook / Yahoo fall back
 - Total LMX **<100KB** (API cap) and **<102KB** (Gmail clip). The assembler enforces this with a trimming cascade (`lmx-master-template.md`).
 - No `clamp()` — email has no fluid type. Fixed px heading scale.
 - CTA button ≥44px tall (`padding="13 32"`).
-- `bodyPadding="24"` on `<Style/>`; rely on Loops' 600px centered responsive column (don't hand-roll `max-width`).
+- `bodyXPadding="24" bodyYPadding="24"` on `<Style/>` (ThemeStyles has X/Y padding keys, no `bodyPadding`); rely on Loops' 600px centered responsive column (don't hand-roll `max-width`).
 - `<Columns stackOnMobile="true">` only for the masthead; everything else is single-column.
 
 ## No footer authored

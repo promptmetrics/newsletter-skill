@@ -1,13 +1,13 @@
 # LMX Master Template — "Field Notes" Mixed Issue
 
-The 12-section LMX skeleton the assembler emits. `{{variable}}` placeholders are filled from the brief; `key_points[]` and `body_blocks[]` expand into repeated/concrete blocks (LMX has **no loops or conditionals**). One `<Style themeId="promptmetrics-paper"/>` is always the first line. **No footer** — Loops auto-appends the campaign footer + `{system.unsubscribe_link}`; do not author it.
+The 12-section LMX skeleton the assembler emits. `{{variable}}` placeholders are filled from the brief; `key_points[]` and `body_blocks[]` expand into repeated/concrete blocks (LMX has **no loops or conditionals**). One `<Style themeId="{{theme_id}}"/>` is always the first line. `{{theme_id}}` is captured from `GET /v1/themes` at run time; the OpenAPI contract does **not** state what value `<Style themeId="...">` accepts, so its form (opaque `data[].id` from the Themes response vs. the theme's name, e.g. `"PromptMetrics Paper"`) is decided by an empirical A/B test — do not assert one form over the other. **No footer** — Loops auto-appends the campaign footer + `{system.unsubscribe_link}`; do not author it.
 
 All hex values are inlined per `token-map.md`. Fonts come from the Theme, not per-block.
 
 ## Skeleton
 
 ```xml
-<Style themeId="promptmetrics-paper" backgroundColor="#f4efe7" bodyPadding="24"/>
+<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>
 
 <!-- 1. Preheader = the message `previewText` field, not an LMX block. -->
 
@@ -147,4 +147,4 @@ Measure the final assembled LMX string **after assembly, before `POST /v1/email-
 
 ## Theme injection
 
-`<Style themeId="promptmetrics-paper" backgroundColor="#f4efe7" bodyPadding="24"/>` is always the **first line**. The Theme (fonts, heading sizes, button radius, body padding, link color) is pre-built manually in the Loops UI once — see README "One-time Loops UI setup". The skill never creates or modifies the Theme via API (read-only).
+`<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>` is always the **first line**. The Theme (fonts, heading sizes, button radius, body padding, link color) is **created or verified via the API** at onboarding (`POST /v1/themes` if missing, else `GET /v1/themes` and capture the `id`) — see `onboarding.md` step 2 and `token-map.md` for the `ThemeStyles`-aligned body. The manual Loops UI path is the **fallback** (e.g. if the team's Content API is not enabled) — see README "One-time Loops UI setup".
