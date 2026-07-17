@@ -50,29 +50,64 @@ Why **not** `~/.zshenv`: it runs on **every** zsh, including non-interactive scr
 
 ## 2. Design system / template — the "PromptMetrics Paper" Theme
 
-Loops Themes are **read-only via API**, so the Theme is built once in the Loops UI. Onboarding guides the user through Loops UI → Themes → New, name **"PromptMetrics Paper"**, with these exact values (canonical in `references/token-map.md`):
+The Theme is created/verified **via the Loops API** (Themes are writable in OpenAPI v1.19.0: `POST /v1/themes` and `POST /v1/themes/{themeId}`). The Loops UI path remains a **fallback** when the API path fails. Canonical token values live in `references/token-map.md`.
 
-| Setting | Value |
+### 2a. Look for an existing Theme — `GET /v1/themes`
+
+`GET /v1/themes` is **paginated**: it returns `{ pagination, data: [...] }` where `data[].id` is an **opaque** value (e.g. `cm_...`), not a slug. Paginate with `perPage` (10–50) and `pagination.nextCursor` — loop pages until a Theme with `name == "PromptMetrics Paper"` is found **or** pages are exhausted. Only after exhausting pages may you conclude the Theme is missing.
+
+```http
+GET /v1/themes?perPage=50
+# if pagination.nextCursor is non-null, repeat:
+GET /v1/themes?perPage=50&cursor={nextCursor}
+```
+
+### 2b. If found — capture its id (M2)
+
+Store the matched Theme's `data[].id` (the opaque `cm_...` value). This id is used by:
+
+- `POST /v1/themes/{themeId}` — to reconcile the Theme's styles to the exact `token-map.md` values below (optional; run if the stored styles have drifted), and
+- `<Style themeId="...">` — as a **candidate** value for the LMX `<Style />` tag's `themeId` attribute.
+
+> **Do not assert which form `<Style themeId>` accepts.** The OpenAPI spec does not state it. `llms-full-txt`'s only example is `<Style themeId="default" />`, where `"default"` is a Theme **name** (the `isDefault` Theme), not an opaque id. The committed form — opaque id vs Theme name `"PromptMetrics Paper"` — is decided by an **empirical A/B test** in Verification. Treat both the captured opaque id **and** the literal name `"PromptMetrics Paper"` as candidates until that test runs.
+
+### 2c. If missing — create it via `POST /v1/themes`
+
+`POST /v1/themes` with the Paper token values from `token-map.md` (name `"PromptMetrics Paper"` + the `ThemeStyles` keys, which match the LMX `<Style />` attribute names):
+
+| ThemeStyles key | Value |
 |---|---|
-| Background | `#f4efe7` |
-| Text base | `#1c1c1c` |
-| Link color | `#a1482a` |
-| Button background | `#d97757` |
-| Button text | `#2a160e` |
-| Button radius | `999` |
-| Card radius | `18` |
-| Body padding | `24` |
-| Headings font | `Fraunces, ui-serif, Georgia, serif` |
+| `backgroundColor` | `#f4efe7` |
+| `textBaseColor` | `#1c1c1c` |
+| `textLinkColor` | `#a1482a` |
+| `buttonBodyColor` | `#d97757` |
+| `buttonTextColor` | `#2a160e` |
+| `buttonBorderRadius` | `999` |
+| `borderRadius` | `18` |
+| `bodyXPadding` | `24` |
+| `bodyYPadding` | `24` |
+| Heading font | `Fraunces, ui-serif, Georgia, serif` |
 | Body font | `Inter, ui-sans-serif, Arial, sans-serif` |
 | Labels font | `JetBrains Mono, ui-monospace, Consolas, monospace` |
 | H1 / H2 / H3 / body sizes | 32 / 24 / 20 / 16 |
 | Document meta | `color-scheme: light dark` |
 
-**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Paper"`. Loop until present.
+Note: ThemeStyles has **`bodyXPadding` / `bodyYPadding`** (and `backgroundXPadding` / `backgroundYPadding`) — there is no `bodyPadding` key. On success (`201`) capture the returned Theme `id` (feeds M2). A `401` here with an otherwise-valid key means the team's **Content API is not enabled** (distinct from the Step 0 `GET /v1/api-key` 401) — point the user to Loops Settings to enable it.
+
+### 2d. Fallback — Loops UI
+
+If `POST /v1/themes` returns `400` / `403` / `401` (or the team has not enabled the Content API), fall back to the **manual** path: Loops UI → Themes → New, name **"PromptMetrics Paper"**, with the exact values in the table in 2c (plus the manual `Body padding: 24` mapping used by the UI). After the user creates it, **re-run 2a** — `GET /v1/themes` again, paginate, and capture the new Theme's `id` so M2 is satisfied either way.
+
+**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Paper"`, and its `id` is captured for use by `POST /v1/themes/{id}` and as a `<Style themeId>` candidate.
 
 ## 3. From address — sending domain + fromName / fromEmail
 
-`POST /v1/campaigns` **400s** if the sending domain or `fromName`/`fromEmail` aren't configured. Onboarding guides the user through Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"PromptMetrics Field Notes"`) and `fromEmail` (e.g. `fieldnotes@<verified-domain>`).
+Two **distinct** from-address concepts:
+
+- **Sending address (Loops UI only)** — Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"PromptMetrics Field Notes"`) and the full sending address `fieldnotes@<verified-domain>`. This is configured in the UI, never via the API.
+- **API `fromEmail` (Step 4, `POST /v1/email-messages`)** — **USERNAME ONLY, no `@`, no domain.** For example `"fieldnotes"`, not `"fieldnotes@<verified-domain>"`. Loops appends the verified sending domain automatically; sending a full `user@domain` here is an error.
+
+`POST /v1/campaigns` **400s** if the sending domain or `fromName`/`fromEmail` aren't configured in the UI. Onboarding guides the user through Loops Settings → Domains to set both before any API send.
 
 **Verify**: a dry `POST /v1/campaigns { name:"onboarding-check" }` returns a campaign (not 400). A 400 → domain/from unconfigured; loop back. Delete the throwaway campaign afterward.
 

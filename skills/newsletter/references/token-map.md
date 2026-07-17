@@ -28,6 +28,17 @@ Authoritative reference for the LMX assembler. Every Paper design token maps to 
 
 Loops emits a VML `RoundRect` fallback for Outlook Classic — border-radius degrades to square gracefully. Accept it.
 
+## Theme body padding (ThemeStyles)
+
+ThemeStyles exposes X/Y padding keys, **not** a single `bodyPadding`:
+
+| ThemeStyles key | Value | Notes |
+|---|---|---|
+| `bodyXPadding` | `24` | Theme-level horizontal body padding |
+| `bodyYPadding` | `24` | Theme-level vertical body padding |
+
+`bodyPadding` is **not** a ThemeStyles field (it does not exist in the Loops OpenAPI v1.19.0 `ThemeStyles` schema). Use `bodyXPadding` / `bodyYPadding` only; any `bodyPadding` value sent to `POST /v1/themes` will be rejected as an unknown key.
+
 ## The 3px coral top-bar (LMX has no `::before`)
 
 Fake it: make a 3px coral `<Divider>` the **first child** inside the card `<Section>` (card top padding `0`, inner `<Section>` re-pads to `20`):
@@ -46,6 +57,16 @@ Fake it: make a 3px coral `<Divider>` the **first child** inside the card `<Sect
 ## Typography (Theme-level, not per-email)
 
 Fonts are set once in the "PromptMetrics Paper" **Theme** (Loops emits the Google Fonts `<link>` + fallback chain). The assembler does not set fonts per-block.
+
+### `themeId` form — TBD (empirical A/B test)
+
+The Loops OpenAPI v1.19.0 does **not** specify what value `<Style themeId="…">` accepts. The only documented example (`llms-full.txt`) uses `<Style themeId="default" />`, where `default` is the **theme name** of the `isDefault` theme — not its opaque `id`.
+
+Two candidate forms exist:
+- **Opaque id** — the `data[].id` returned by `GET /v1/themes` (e.g. `cm_…`).
+- **Theme name** — the `data[].name` field, e.g. `PromptMetrics Paper`.
+
+The committed form is **TBD** and is decided by the empirical A/B test in the Verification procedure: assemble two minimal LMX bodies, one with each form, call `POST /v1/email-messages/{id}`, and observe which returns `200` (vs `400`/`422`). Do **not** assert a form in any skill content until that test has run. The LMX master template should use a parameterized placeholder (e.g. `<Style themeId="{{theme_id}}" />`) until the A/B test resolves it.
 
 | Role | Stack | Fallback reality |
 |---|---|---|
@@ -75,3 +96,37 @@ LMX/editor supports **no custom CSS**, so `@media (prefers-color-scheme)` is not
 - Logo: ship a mid-tone/reverse variant inside a fixed-color chip so it never disappears.
 - Set `<meta name="color-scheme" content="light dark">` at the Theme/document level in the Loops UI (not API-settable).
 - Every text color must clear AA against **both** `#f4efe7` and a dark inverse (~`#2a2620`).
+
+## POST /v1/themes body (ThemeStyles-aligned)
+
+The Loops OpenAPI v1.19.0 exposes `POST /v1/themes` (201) with a `CreateThemeBody` whose `styles` field is a `ThemeStyles` object. Keys **must match the ThemeStyles field names exactly** (these are the attribute names accepted by the LMX `<Style />` tag). The body below is the canonical "PromptMetrics Paper" Theme; every key here is a real ThemeStyles field verified against the schema.
+
+```json
+{
+  "name": "PromptMetrics Paper",
+  "styles": {
+    "backgroundColor": "#f4efe7",
+    "textBaseColor": "#1c1c1c",
+    "textLinkColor": "#a1482a",
+    "buttonBodyColor": "#d97757",
+    "buttonTextColor": "#2a160e",
+    "buttonBorderRadius": 999,
+    "borderRadius": 18,
+    "bodyXPadding": 24,
+    "bodyYPadding": 24,
+    "headingFontFamily": "Fraunces, ui-serif, Georgia, serif",
+    "bodyFontFamily": "Inter, ui-sans-serif, Arial, sans-serif",
+    "monoFontFamily": "JetBrains Mono, ui-monospace, Consolas, monospace",
+    "h1FontSize": 32,
+    "h2FontSize": 24,
+    "h3FontSize": 20,
+    "bodyFontSize": 16
+  }
+}
+```
+
+Notes:
+- `bodyXPadding` / `bodyYPadding` are the **only** body-padding keys — `bodyPadding` is not a ThemeStyles field and will be rejected.
+- `fromEmail` and other email-message-level fields do **not** belong here; this body creates the Theme only.
+- Color values are inlined six-digit hex (no shorthand) to match the dark-mode survival rules above.
+- Heading scale matches the "Typography" section: H1 `32` / H2 `24` / H3 `20` / body `16`. Lede `18`, meta/mono `13`, and kicker `12` are per-block LMX attributes, not ThemeStyles fields, so they are not set here.
