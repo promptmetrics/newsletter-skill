@@ -12,7 +12,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
 2. **Color lives on inline tags.** `<Paragraph>`/`<H1>`-`<H3>`/`<Quote>` take no `textColor`; wrap content in `<Text textColor="…">`. Heading color comes from the Theme.
 3. **Padding is four numeric attributes**, never a shorthand string.
 4. **`<Br/>` is inline-only.** Allowed top-level tags are exactly: `H1 H2 H3 Paragraph Quote CodeBlock Button Image Divider OrderedList UnorderedList Columns Component For Icons Section Style`. Spacing between blocks comes from `paddingTop`/`paddingBottom`, never a `<Br/>`.
-5. **Muted `#5e6f68` is sheet-only.** It clears AA on `#e9f1ee` (4.63:1) but *not* on the `#e0ebe7` card (4.36:1). On cards, 13px labels/indices use teal-dark `#276358` and 13px prose uses ink-2 `#39443f`.
+5. **Muted `#5e6f68` is sheet-only.** It clears AA on the `#e9f1ee` sheet (4.63:1) but *not* on the `#d2e1db` card (3.93:1). On cards, 13px labels/indices use teal-dark `#276358` (5.16:1) and 13px prose uses ink-2 `#39443f` (7.49:1).
 
 ## Skeleton
 
@@ -51,7 +51,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
      (default 3, max 5). Repeat this block N times with {{kp_*}} filled per element.
      paddingLeft/Right="0" on the Section so the top-bar runs edge-to-edge;
      inner blocks inset themselves by 20. -->
-<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
+<Section blockColor="#d2e1db" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
   <Divider color="#b8446a" borderWidth="3"/>
   <Paragraph fontSize="13" paddingTop="16" paddingLeft="20" paddingRight="20"><Text textColor="#276358">{{kp_number}}</Text></Paragraph>
   <H3 paddingLeft="20" paddingRight="20">{{kp_title}}</H3>
@@ -66,7 +66,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
 
 <!-- 10. Italic "prompt" callout — OMIT if {{prompt_quote}} is empty.
      Raspberry top-bar stands in for the site's left rule (no borderLeft in LMX). -->
-<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
+<Section blockColor="#d2e1db" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
   <Divider color="#b8446a" borderWidth="3"/>
   <Quote fontSize="18" paddingTop="16" paddingLeft="20" paddingRight="20"><Em textColor="#161c1a">{{prompt_quote}}</Em></Quote>
   <!-- attribution line — include only if prompt_attribution is non-empty -->
@@ -77,7 +77,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
 <!-- 11. Standing community CTA — Operator Stack.
      NOT a per-issue CTA and NOT a newsletter signup: the reader already has
      the newsletter. Defaults below are fixed; the brief may override them. -->
-<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="24" paddingLeft="0" paddingRight="0">
+<Section blockColor="#d2e1db" blockBorderRadius="18" paddingTop="0" paddingBottom="24" paddingLeft="0" paddingRight="0">
   <Divider color="#b8446a" borderWidth="3"/>
   <H3 align="center" paddingTop="20" paddingLeft="20" paddingRight="20">{{cta_headline}}</H3>
   <Paragraph fontSize="16" align="center" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">{{cta_supporting}}</Text></Paragraph>

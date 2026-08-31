@@ -8,9 +8,8 @@ Palette name: **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient 
 
 | Token (CSS) | Hex | LMX target |
 |---|---|---|
-| `--pm-paper-3` | `#d2e1db` | `backgroundColor` (outer canvas, Theme) |
 | `--pm-paper` | `#e9f1ee` | `bodyColor` (the email sheet, Theme) |
-| `--pm-paper-2` | `#e0ebe7` | card `<Section blockColor>` |
+| `--pm-paper-3` | `#d2e1db` | outer canvas (`backgroundColor`) **and** card `<Section blockColor>` |
 | `--pm-ink` | `#161c1a` | `textBaseColor` + `heading1/2/3Color` (Theme) |
 | `--pm-ink-2` | `#39443f` | lede / card-description `<Text textColor>` |
 | `--pm-muted` | `#5e6f68` | meta, byline, sign-off `<Text textColor>` — **sheet only**, see below |
@@ -31,7 +30,7 @@ Upstream (`v3-tokens.css:38,45`): *"Raspberry is rationed to primary CTAs and li
 ### Contrast rules
 
 - Raspberry `#b8446a` is **~3.4:1 on mint — non-text or ≥18px only.** Any raspberry that is *small text* (links, emphasis) must be `#8a2c4e`.
-- **Muted `#5e6f68` is sheet-only.** It clears AA on the `#e9f1ee` sheet (4.63:1) but **fails on the `#e0ebe7` card (4.36:1)**. Upstream's contrast matrix only tests muted against `--pm-paper`, so this gap is one the email surfaces by putting 13px meta on cards. On a card, use **teal-dark `#276358`** (5.71:1) for labels and indices, and **ink-2 `#39443f`** (8.30:1) for prose.
+- **Muted `#5e6f68` is sheet-only.** It clears AA on the `#e9f1ee` sheet (4.63:1) but **fails on the `#d2e1db` card (3.93:1)**. Upstream's contrast matrix only tests muted against `--pm-paper`, so this gap is one the email surfaces by putting 13px meta on cards. On a card, use **teal-dark `#276358`** (5.16:1) for labels and indices, and **ink-2 `#39443f`** (7.49:1) for prose. Raspberry `#b8446a` on a card is 3.81:1 — still fine as a non-text top-bar.
 - `#7a8d86` (`--pm-muted-soft`) fails AA as small text on every surface — never use it for the 13px meta lines.
 - Pull quotes take ink `#161c1a` (matching the site's `.pm-quote`); their attribution line takes ink-2 `#39443f`, so the two stay distinguishable.
 - **The CTA label is white `#ffffff` on `#b8446a` (5.2:1 AA).** This reverses the old palette's rule, which used dark ink on the button because the previous orange coral was too light for white. Raspberry is dark enough that white is correct — and is what `--pm-coral-ink` resolves to upstream.
@@ -45,8 +44,10 @@ Depth comes from the **mint surface ladder** instead — three ascending steps, 
 ```
 #d2e1db   outer canvas   (Theme backgroundColor)
   #e9f1ee   email sheet  (Theme bodyColor)
-    #e0ebe7   card       (Section blockColor)
+    #d2e1db   card       (Section blockColor)
 ```
+
+**Two tones, not three.** `--pm-paper-2` (`#e0ebe7`) was the obvious card colour by analogy with the website, but it reads at only **1.06:1** against the sheet — close to invisible once you remove the border and shadow the site relies on. `--pm-paper-3` (`#d2e1db`) reads at **1.18:1** and is what actually makes a card look like a card in email. The canvas reuses the same tone; that is fine, since the canvas sits outside the sheet and the two never touch.
 
 The card reads as raised against the sheet on its own, with no border. This is also more robust than a hairline: 1px borders are the first thing Outlook drops.
 
@@ -64,7 +65,7 @@ Loops emits a VML `RoundRect` fallback for Outlook Classic — border-radius deg
 A `<Divider>` as the **first child** of the card `<Section>`. Because sections cannot nest (see `lmx-notes.md`), the card Section carries `paddingLeft="0" paddingRight="0"` so the divider runs edge-to-edge, and each **inner block** insets itself with `paddingLeft="20" paddingRight="20"`:
 
 ```xml
-<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
+<Section blockColor="#d2e1db" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
   <Divider color="#b8446a" borderWidth="3" />
   <Paragraph fontSize="13" paddingLeft="20" paddingRight="20"><Text textColor="#5e6f68">01</Text></Paragraph>
   <H3 paddingLeft="20" paddingRight="20">Card title</H3>
