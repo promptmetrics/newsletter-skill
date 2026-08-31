@@ -45,6 +45,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
 <!-- 7. Hero image — OMIT ENTIRELY if {{hero_image_url}} is empty.
      Image carries its own radius; no card Section needed. -->
 <Image src="{{hero_image_url}}" alt="{{hero_image_alt}}" width="552" borderRadius="18" align="center"/>
+<Paragraph fontSize="12"><Br/></Paragraph>
 
 <!-- 8. Key-points card stack — EXPAND: one card <Section> per element of key_points[]
      (default 3, max 5). Repeat this block N times with {{kp_*}} filled per element.
@@ -58,6 +59,7 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
   <!-- optional link — include only if kp_link_url is non-empty -->
   <Paragraph fontSize="13" paddingTop="8" paddingLeft="20" paddingRight="20"><Link href="{{kp_link_url}}">{{kp_link_label}}</Link></Paragraph>
 </Section>
+<Paragraph fontSize="12"><Br/></Paragraph>
 
 <!-- 9. Editorial body — EXPAND: concatenate body_blocks[] LMX fragments in order -->
 {{body_blocks_expanded}}
@@ -70,14 +72,18 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
   <!-- attribution line — include only if prompt_attribution is non-empty -->
   <Paragraph fontSize="13" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">— {{prompt_attribution}}</Text></Paragraph>
 </Section>
+<Paragraph fontSize="12"><Br/></Paragraph>
 
-<!-- 11. Primary CTA card -->
+<!-- 11. Standing community CTA — Operator Stack.
+     NOT a per-issue CTA and NOT a newsletter signup: the reader already has
+     the newsletter. Defaults below are fixed; the brief may override them. -->
 <Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="24" paddingLeft="0" paddingRight="0">
   <Divider color="#b8446a" borderWidth="3"/>
   <H3 align="center" paddingTop="20" paddingLeft="20" paddingRight="20">{{cta_headline}}</H3>
   <Paragraph fontSize="16" align="center" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">{{cta_supporting}}</Text></Paragraph>
   <Button href="{{cta_url}}" bgColor="#b8446a" textColor="#ffffff" borderRadius="999" innerXPadding="32" innerYPadding="13" align="center" paddingTop="16">{{cta_label}}</Button>
 </Section>
+<Paragraph fontSize="12"><Br/></Paragraph>
 
 <!-- 12. Sign-off (footer + unsubscribe auto-appended by Loops — do not author) -->
 <Paragraph fontSize="13"><Text textColor="#5e6f68">— {{author_name}}, {{company}}</Text></Paragraph>
@@ -100,16 +106,34 @@ Read `lmx-notes.md` before editing. The three that shape the markup:
 | `kp_number` / `kp_title` / `kp_description` / `kp_link_url`? / `kp_link_label`? | `key_points[]` element | per card | 3 default, 5 max |
 | `body_blocks_expanded` | `body_blocks[]` | LMX fragment string | concatenated |
 | `prompt_quote` / `prompt_attribution`? | `prompt_quote` / `prompt_attribution` | string? | §10 omitted if `prompt_quote` empty |
-| `cta_label` / `cta_url` | `cta.label` / `cta.url` (required) | string | |
-| `cta_headline` / `cta_supporting` | drafted from `goal` / `key_points[0].description` if absent | string | Approved at Gate 1 |
+| `cta_url` | `cta.url` | string | **Defaults to `https://operator.promptmetrics.dev/`** (Operator Stack). Override only for a genuinely different destination |
+| `cta_label` | `cta.label` | string | **Defaults to `Join Operator Stack`** |
+| `cta_headline` | `cta.headline` | string | **Defaults to `Compare notes with other operators`** |
+| `cta_supporting` | `cta.supporting` | string | **Defaults to `Operator Stack is where RevOps, CS and marketing-ops leads working the same problems trade what actually shipped.`** |
 | `company` | `company` | string | sign-off |
 
 Message-level fields (not in LMX): `subject`, `previewText` (from `preview_text`), `fromName`, `fromEmail`, `replyToEmail`.
 
+## The standing community CTA (§11)
+
+§11 is a **fixed Operator Stack card**, not a per-issue action and **never a newsletter signup** — the reader is already a subscriber, so "Subscribe to Field Notes" is a dead CTA that wastes the issue's only button.
+
+Defaults, used unless the brief explicitly overrides them:
+
+| Slot | Value |
+|---|---|
+| `cta_url` | `https://operator.promptmetrics.dev/` |
+| `cta_label` | `Join Operator Stack` |
+| `cta_headline` | `Compare notes with other operators` |
+| `cta_supporting` | `Operator Stack is where RevOps, CS and marketing-ops leads working the same problems trade what actually shipped.` |
+
+Do **not** draft per-issue CTA copy from `goal` any more. If an issue genuinely needs its own action, put it on a key-point card's "read more" link (§8), which is what that link is for.
+
 ## Expansion rules
 
 ### `key_points[]` → repeated card blocks
-- Each element `{title, description, link_url?, link_label?}` emits the §8 card block once. Do **not** separate cards with `<Br/>` — it is inline-only and 422s at top level; Loops spaces sibling blocks on its own.
+- Each element `{title, description, link_url?, link_label?}` emits the §8 card block once, **followed by the spacer** `<Paragraph fontSize="12"><Br/></Paragraph>`.
+- **The spacer is required.** Loops puts no gap between sibling blocks, and `paddingBottom` on a card `<Section>` sits *inside* the mint fill (it makes the card taller, it does not separate it from the next one). Without the spacer the cards render as one continuous slab. A bare `<Br/>` will not do — it is inline-only and 422s at top level; it must be wrapped in a `<Paragraph>`.
 - **Default 3 cards, max 5.** If the brief has fewer than 3, ask the author whether to pad or ship fewer (do not silently pad). If more than 5, truncate to the first 5 and warn the author.
 - `{{kp_number}}` = zero-padded index (`01`, `02`, …).
 - Include the link `<Paragraph>` **only if** `link_url` is non-empty; otherwise omit it. If `link_url` is set but `link_label` is empty, default the label to `"Read more"`. The `<Link>` inherits `textLinkColor` (`#8a2c4e`) from the Theme — do not set a color on it.
@@ -121,8 +145,8 @@ Message-level fields (not in LMX): `subject`, `previewText` (from `preview_text`
 - Concatenate in array order. Separate with no extra markup (the fragments carry their own spacing).
 
 ### Optional-section stripping
-- §7 (hero): strip the `<Image>` if `hero_image_url` is empty/absent. The URL **must be Loops-CDN-hosted** (upload flow) — an external URL 422s.
-- §10 (callout): strip the whole `<Section>` if `prompt_quote` is empty/absent; strip just the attribution `<Paragraph>` if `prompt_attribution` is empty.
+- §7 (hero): strip the `<Image>` **and its following spacer** if `hero_image_url` is empty/absent. The URL **must be Loops-CDN-hosted** (upload flow) — an external URL 422s.
+- §10 (callout): strip the whole `<Section>` **and its following spacer** if `prompt_quote` is empty/absent; strip just the attribution `<Paragraph>` if `prompt_attribution` is empty.
 
 ## 100KB cap (API) / 102KB (Gmail clip)
 
