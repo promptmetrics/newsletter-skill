@@ -10,6 +10,17 @@ Exactly these may sit at the top level of a document:
 
 **`<Br/>` is not one of them** — it is inline and 422s at top level ("Top-level `<Br>` is not allowed"). Use `paddingTop`/`paddingBottom` for spacing between blocks. Same for `<Text>`, `<Link>`, `<ListItem>` and `<ColumnItem>`.
 
+## Spacing between cards
+Loops puts **no gap between sibling blocks**, and `paddingBottom` on a `<Section>` renders *inside* the `blockColor` fill — it makes the card taller, it does not separate it from the next card. Consecutive cards therefore render as one continuous slab.
+
+Insert an explicit spacer between them:
+
+```xml
+<Paragraph fontSize="12"><Br/></Paragraph>
+```
+
+`<Br/>` must be wrapped — bare, it 422s at top level. Avoid the alternative "invisible `<Divider>` matching `bodyColor`" trick: it couples the spacer to the palette, so the line reappears the moment `bodyColor` changes. An empty `<Paragraph></Paragraph>` validates but can collapse to zero height in some clients; the `<Br/>` guarantees a line box.
+
 ## Images must be Loops-hosted
 `<Image src>` must point at Loops' own CDN. An external URL fails with *"is not hosted on our CDN. Uploading external images is not supported yet."* Both `hero_logo_url` **and** `hero_image_url` must come from the 3-step upload flow (`POST /v1/uploads` → `PUT` presigned → `POST /v1/uploads/{id}/complete`), never a pasted link.
 

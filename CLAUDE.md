@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A Claude Code **plugin** (`promptmetrics-newsletter`, v0.3.0) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `skills/newsletter/SKILL.md` and its `references/`; the only executable code is `skills/newsletter/scripts/`.
+A Claude Code **plugin** (`promptmetrics-newsletter`, v0.4.0) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `skills/newsletter/SKILL.md` and its `references/`; the only executable code is `skills/newsletter/scripts/`.
 
 ## Architecture (the big picture that spans files)
 
@@ -72,7 +72,7 @@ Gate 2 enforces an allowlist (team discipline, not cryptographic RBAC): only ema
 
 ## Decisions baked in
 
-Defaults locked during planning (full rationale in `loops-api-verification-and-template-design.md` "Open decisions"): unpersonalized body with `contactPropertiesFallbacks:{firstName:"there"}` always set (D5); 3 default / 5 max key-point cards with per-card "read more" link (D6); subject + preview approved at Gate 1 (D7); built-in spam-terms list with house-override hook (D8); six required brief fields (BF). Account/team config that remains the user's call (sending domain, allowlist, list, logo variant, hero art direction) is listed in README's "Decisions baked in".
+Defaults locked during planning (full rationale in `loops-api-verification-and-template-design.md` "Open decisions"): unpersonalized body with `contactPropertiesFallbacks:{firstName:"there"}` always set (D5); 3 default / 5 max key-point cards with per-card "read more" link (D6); subject + preview approved at Gate 1 (D7); built-in spam-terms list with house-override hook (D8); five required brief fields (BF; `cta` became optional in v0.4.0 when §11 became the standing Operator Stack community card). Account/team config that remains the user's call (sending domain, allowlist, list, logo variant, hero art direction) is listed in README's "Decisions baked in".
 
 ## Notes specific to editing this repo
 

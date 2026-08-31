@@ -68,9 +68,9 @@ Input modes, in priority order:
 - *Freeform paste* — user pastes a brief or partial brief.
 - *Interview* (Phase 1a default when no brief) — interview the author using `references/brief-schema.md`.
 
-Whatever the source, check the brief against the required-fields contract and **gap-collect**: ask only about what's missing. Full brief → zero questions. Partial → targeted questions. Empty → full interview (walk the 6 required fields, then offer optional fields). Output: a complete brief object with all required fields populated.
+Whatever the source, check the brief against the required-fields contract and **gap-collect**: ask only about what's missing. Full brief → zero questions. Partial → targeted questions. Empty → full interview (walk the 5 required fields, then offer optional fields). Output: a complete brief object with all required fields populated.
 
-If optional fields are absent, draft them: `subject` / `preview_text` / `headline` / `emphasis_word` / `lede` from `goal` + `key_points[0]`; `read_time` from body length; `cta_headline` from `goal`; `cta_supporting` from `key_points[0].description`. These are approved at Gate 1. Split `headline` at `emphasis_word` into `headline_before_em` / `emphasis_word` / `headline_after_em` (exactly one emphasis word).
+If optional fields are absent, draft them: `subject` / `preview_text` / `headline` / `emphasis_word` / `lede` from `goal` + `key_points[0]`; `read_time` from body length; **do not draft CTA copy** — §11 is the standing Operator Stack community card (`https://operator.promptmetrics.dev/`, "Join Operator Stack"); use its fixed defaults from `references/lmx-master-template.md` unless the brief explicitly overrides them, and never point it at a newsletter signup (the reader is already subscribed). These are approved at Gate 1. Split `headline` at `emphasis_word` into `headline_before_em` / `emphasis_word` / `headline_after_em` (exactly one emphasis word).
 
 ### Step 2 — Create draft campaign (delegate → Loops API skill)
 `POST /v1/campaigns { name, mailingListId? }` (see `loops-endpoints.md`).
