@@ -23,6 +23,8 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 ## The one rule that overrides everything
 
 > **`scheduling` stays unset through every step until Gate 2.** It is set to `method:"now"` ONLY in Step 9, ONLY after an explicit human "send" at Gate 2. No `scheduling` field appears in any earlier API call. If any step fails or the user goes silent, the campaign stays in Draft — it cannot accidentally fire.
+>
+> **Note:** a freshly created Draft *reads back* as `"scheduling": {"method":"now"}` even when no scheduling field was sent — that is an API default, not a pending send. The rule governs what you **POST**, not what you read. Confirm safety with `status == "Draft"` and `sentAt == null`.
 
 ## References (read at runtime)
 
@@ -42,7 +44,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 **First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
 1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding runs `loops-key.sh install-line` (after confirmation), which writes a guarded keychain-read `export` line to **both `~/.zprofile` and `~/.zshrc`**, and tells the user to **restart their shell**; it does **not** validate in-session (the key is not in env until the restart). Validation runs at Step 0 below on the next run.
-2. **Design system / template** — the "PromptMetrics Paper" Theme, created-or-verified via the API (not manual-only): `GET /v1/themes` (paginated; page with `perPage` + `nextCursor` until found). If a theme with `name=="PromptMetrics Paper"` exists, capture its `id`. If missing, `POST /v1/themes` with the Paper token values (`references/token-map.md`) and capture the returned `id`. The manual Loops UI path (Themes → New theme) is the **fallback** if the API path fails (e.g. Content API not enabled).
+2. **Design system / template** — the "PromptMetrics Sea Glass" Theme, created-or-verified via the API (not manual-only): `GET /v1/themes` (paginated; page with `perPage` + `nextCursor` until found). If a theme with `name=="PromptMetrics Sea Glass"` exists, capture its `id`. If missing, `POST /v1/themes` with the Paper token values (`references/token-map.md`) and capture the returned `id`. The manual Loops UI path (Themes → New theme) is the **fallback** if the API path fails (e.g. Content API not enabled).
 3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /v1/campaigns` that does **not** 400.
 4. **Logo** — `hero_logo_url` from a one-time `POST /v1/uploads` (3-step: create → PUT to presigned URL → complete).
 
@@ -55,7 +57,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
    > **Forbidden pattern.** Never emit `LOOPS_API_KEY="$(.../loops-key.sh get)" ...` inline at runtime. The auto-mode classifier blocks keychain-secret extraction, and it exposes the key in the transcript. The key enters env only via the guarded keychain-read line that `loops-key.sh install-line` writes to `~/.zprofile` and `~/.zshrc` at shell startup. (`install-line` itself is allowed — it writes a **static** read command, not the key value, so it is not `get` and does not trip the classifier.)
 2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
-3. "PromptMetrics Paper" Theme exists and its `id` captured: `GET /v1/themes` (paginated — follow `pagination.nextCursor` with `perPage` up to 50) → find `data[].id` where `name=="PromptMetrics Paper"`. Store as `{{theme_id}}` for Step 3.4. Missing → onboarding step 2 (which will `POST /v1/themes` to create it and capture the new `id`).
+3. "PromptMetrics Sea Glass" Theme exists and its `id` captured: `GET /v1/themes` (paginated — follow `pagination.nextCursor` with `perPage` up to 50) → find `data[].id` where `name=="PromptMetrics Sea Glass"`. Store as `{{theme_id}}` for Step 3.4. Missing → onboarding step 2 (which will `POST /v1/themes` to create it and capture the new `id`).
 4. `hero_logo_url` known. Missing → onboarding step 4.
 
 No key, no Theme, no logo → no run. Onboarding is idempotent — re-run only what's missing.
@@ -81,10 +83,10 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 1. Build the variable map from the brief (see the template's "Variable slots" table).
 2. Expand `key_points[]`: for each element, emit the §8 card `<Section>` block with `{kp_number (zero-padded), kp_title, kp_description, kp_link_url?, kp_link_label?}`. **Default 3 cards, max 5.** Fewer than 3 → ask the author whether to pad or ship fewer (don't silently pad). More than 5 → truncate to first 5 and warn. Include the `<Text><Link>` line **only if** `link_url` is non-empty.
 3. Expand `body_blocks[]`: validate each fragment (PascalCase tag, properly closed) — reject and ask the author to fix if invalid — then concatenate in array order inside the §9 `<Section>`.
-4. Inject `<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>` as the **first line**, where `{{theme_id}}` is the id captured in Step 0 (`GET /v1/themes` → `data[].id` where `name=="PromptMetrics Paper"`). The committed `themeId` form (opaque id vs. theme name `"PromptMetrics Paper"`) is decided by the empirical A/B test documented in `loops-api-verification-and-template-design.md` ("Verification") — do not assert a form here.
-5. Strip optional blocks: §7 (hero) if `hero_image_url` empty; §10 (callout) if `prompt_quote` empty; the attribution `<Text>` if `prompt_attribution` empty.
-6. Emit the italic-coral emphasis as `<H1><Text>…</Text><Em><Text color="#a1482a">{{emphasis_word}}</Text></Em><Text>…</Text></H1>` (verify in preview; fallback coral `<Text>` without italic).
-7. Emit the 3px coral top-bar as a coral `<Divider thickness="3">` first child inside card `<Section>`s (card `padding="0"`; inner `<Section>` re-pads via `<Style bodyXPadding bodyYPadding>` — 20 for key-point cards, 16 for hero, 24 for CTA — see template). `bodyPadding` is **not** a valid `<Style>`/ThemeStyles attribute; always use the X/Y pair.
+4. Inject `<Style themeId="{{theme_id}}" backgroundColor="#d2e1db" bodyColor="#e9f1ee" bodyXPadding="24" bodyYPadding="24"/>` as the **first line**, where `{{theme_id}}` is the id captured in Step 0 (`GET /v1/themes` → `data[].id` where `name=="PromptMetrics Sea Glass"`). Pass the **opaque `data[].id`** — the theme *name* is rejected with `422 <Style> references unknown themeId` (verified 2026-08-31).
+5. Strip optional blocks: §7 (hero) if `hero_image_url` empty; §10 (callout) if `prompt_quote` empty; the attribution `<Paragraph>` if `prompt_attribution` empty.
+6. Emit the italic-raspberry emphasis as `<H1>…<Em textColor="#8a2c4e">{{emphasis_word}}</Em>…</H1>`. `textColor` is documented directly on `<Em>` — do not nest a `<Text>` inside it.
+7. Emit the 3px raspberry top-bar as `<Divider color="#b8446a" borderWidth="3"/>` — the first child inside each card `<Section>`. **Sections cannot nest**, so each card is one flat `<Section>` with `paddingLeft="0" paddingRight="0"` (so the divider runs edge-to-edge) and every inner block insetting itself with `paddingLeft="20" paddingRight="20"`. The thickness attribute is `borderWidth`, not `thickness`; padding is four numeric attributes, never a shorthand string. `bodyPadding` is **not** a valid `<Style>`/ThemeStyles attribute; always use the X/Y pair.
 8. **100KB cap** — measure the final string. Over → trim body to 8 paragraphs + append `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>` → reduce cards to 3 + trim descriptions → if still over, **fail** with "Issue content exceeds 100KB even after trimming. Reduce body length or move content to a web link." Do not call the API.
 
 ### Step 4 — Set email content (delegate → Loops API skill)
@@ -93,7 +95,7 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 ### Step 5 — Gate 1: Preview (delegate + skill STOP)
 `POST /v1/email-messages/{id}/preview { emails:[author_email], contactProperties:{firstName:author_first_name} }`. Then **STOP**.
 
-> **GATE 1 — STOP.** "Preview sent to {author_email}. Open it in **Apple Mail (light + dark)** and **Gmail (light + dark)**. Check: Fraunces loads on Apple / Georgia fallback on Gmail; 18px cards (square in Outlook Classic is expected); italic-coral emphasis word renders coral; coral top-bar visible; CTA button ≥44px; no Gmail clipping. Subject + preview text are approved here. Reply **approved** to continue, or **revise** with changes."
+> **GATE 1 — STOP.** "Preview sent to {author_email}. Open it in **Apple Mail (light + dark)** and **Gmail (light + dark)**. Check: Archivo loads on Apple / clean system-ui-Arial fallback on Gmail; the mint ladder reads as three distinct surfaces (canvas / sheet / card); 18px cards (square in Outlook Classic is expected); the italic emphasis word renders raspberry; raspberry card top-bars visible; the kicker reads **teal**, not raspberry; **the white CTA label stays legible on raspberry in dark mode**; CTA button ≥44px; no Gmail clipping. Subject + preview text are approved here. Reply **approved** to continue, or **revise** with changes."
 >
 > Do NOT proceed until the user explicitly says "approved" / "looks good" / "send it to the list". On "revise", loop back to Step 3 with the requested changes (re-assemble → re-POST email-message with the latest `expectedRevisionId` → re-preview).
 

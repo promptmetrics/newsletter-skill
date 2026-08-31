@@ -25,7 +25,7 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 | `emphasis_word` | string | The single italic-coral word in the H1 |
 | `lede` | string | If absent, skill drafts from `goal` |
 | `read_time` | number | If absent, skill estimates from body length |
-| `hero_image_url` | string | If absent, template §7 omitted |
+| `hero_image_url` | string | If absent, template §7 omitted. **Must be a Loops-CDN URL** from the 3-step upload flow — an external/pasted URL fails LMX validation with 422 |
 | `hero_image_alt` | string | **Required if `hero_image_url` is present** — gap-collect asks for it |
 | `hero_logo_url` | string | Masthead logo URL (one-time `POST /v1/uploads` result). If absent → Step 0 stops and points to README one-time setup step 3 |
 | `cta_headline` | string | If absent, skill drafts from `goal` |

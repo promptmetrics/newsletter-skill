@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A Claude Code **plugin** (`promptmetrics-newsletter`, v0.2.1) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `skills/newsletter/SKILL.md` and its `references/`; the only executable code is `skills/newsletter/scripts/`.
+A Claude Code **plugin** (`promptmetrics-newsletter`, v0.3.0) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `skills/newsletter/SKILL.md` and its `references/`; the only executable code is `skills/newsletter/scripts/`.
 
 ## Architecture (the big picture that spans files)
 
@@ -62,7 +62,7 @@ There is no automated test. End-to-end verification is manual and documented in 
 
 Step 0 hard-gates on these; the skill stops if any are missing. They are configured in the Loops UI, not in this repo:
 - Sending domain + `fromName`/`fromEmail` (Loops Settings → Domains) — `POST /v1/campaigns` 400s without them.
-- The "PromptMetrics Paper" Theme (Loops UI → Themes; Themes are read-only via API) with the exact token values in `references/token-map.md`.
+- The "PromptMetrics Sea Glass" Theme with the exact token values in `references/token-map.md`. Themes are **writable** via the API (`POST /v1/themes` to create, `POST /v1/themes/{themeId}` to update), so onboarding creates it automatically; the Loops UI (→ Themes) is the fallback when the team's Content API is not enabled.
 - Logo uploaded via the Loops API 3-step upload flow → its URL goes in the brief's `hero_logo_url`.
 - Mailing list(s) exist (Loops UI → Lists; `GET /v1/lists` returns names but **no contact count** — the skill shows names only and asks the user to verify counts in the UI).
 
@@ -79,5 +79,5 @@ Defaults locked during planning (full rationale in `loops-api-verification-and-t
 - LMX (not HTML) is the only content format the skill sets — `POST /v1/email-messages/{id}` takes the `lmx` field only. The 100KB cap is enforced in Step 3 *before* any API call; over-cap fails rather than sends.
 - The skill sends **campaigns** (one-to-many), never transactional email. `{contact.firstName}` is the only personalization channel.
 - Loops auto-appends the footer + unsubscribe; the template does not author one.
-- Web fonts (Fraunces/Inter/JetBrains Mono) render only in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to Georgia/Arial — the coral top-bar + italic-coral emphasis carry the brand in fallback. Dark mode is **survived, not controlled** (no `@media` in LMX): warm-not-pure hex, coral-ink button text, mid-tone logo.
+- The palette is **"Sea Glass"** (mint surfaces, raspberry accent, teal ambient) and the type is **one family, Archivo** — LMX exposes only `bodyFontFamily`/`bodyFontCategory`, so there is no heading or mono font. Archivo renders in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to system-ui/Arial, with hierarchy carried by size/weight/tracking/color plus the raspberry top-bar and teal kicker rule. Depth comes from the mint surface ladder (`#d2e1db` canvas → `#e9f1ee` sheet → `#e0ebe7` card), because LMX blocks have no border or shadow attribute. Dark mode is **survived, not controlled** (no `@media` in LMX): cool-not-pure hex, white-on-raspberry button, mid-tone logo.
 - Several `.md` files in the repo root (`bug-report-*`, `linux-zshrc-support-plan.md`, `loops-deps-auto-install-plan.md`, `loops-api-verification-and-template-design.md`) are working/planning notes, not shipped skill content.

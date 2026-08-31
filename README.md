@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.2.1) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.3.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -56,13 +56,15 @@ A cross-marketplace plugin `dependencies` declaration (`allowCrossMarketplaceDep
 The skill checks for these at Step 0 and will stop if missing.
 
 1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`. (Note: the `fromEmail` configured here is the **full sending address** in the Loops UI. It is a **separate concept** from the `fromEmail` field the skill sends in `POST /v1/email-messages/{id}` — that API field is **username only** (e.g. `fieldnotes`, no `@`, no domain); Loops appends the verified sending domain automatically. Keep the UI value and the API value in sync: same username, domain lives only in the UI.)
-2. **Create the "PromptMetrics Paper" Theme** — Loops UI → Themes → New. The theme can now also be **auto-created via the API** (`POST /v1/themes`, writable) during onboarding, falling back to manual UI creation if the API call fails. The manual values below are the **fallback spec** (also useful for reference / auditing the API-created theme). Set:
-   - Background `#f4efe7`, text base `#1c1c1c`, link color `#a1482a`
-   - Button background `#d97757`, button text `#2a160e`, button radius `999`
-   - Card radius `18`, body padding `24`
-   - Fonts: headings `Fraunces, ui-serif, Georgia, serif`; body `Inter, ui-sans-serif, Arial, sans-serif`; labels `JetBrains Mono, ui-monospace, Consolas, monospace`
+2. **Create the "PromptMetrics Sea Glass" Theme** — Loops UI → Themes → New. The theme can now also be **auto-created via the API** (`POST /v1/themes`, writable) during onboarding, falling back to manual UI creation if the API call fails. The manual values below are the **fallback spec** (also useful for reference / auditing the API-created theme). Set:
+   - Canvas background `#d2e1db`, email sheet `#e9f1ee`, text base `#161c1a`, link color `#8a2c4e`
+   - Button background `#b8446a` (raspberry), button text `#ffffff`, button radius `999`
+   - Divider + border color `#cddcd6`, card radius `18`, body padding `24`
+   - Font: **one family** — `Archivo, system-ui, Arial, sans-serif`, category `sans-serif`. There is no heading font or mono font field in Loops.
    - Heading sizes: H1 32 / H2 24 / H3 20 / body 16
    - Document-level `<meta name="color-scheme" content="light dark">`
+
+   Palette is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue — from `pm-website/app/styles/v3-tokens.css`. Full mapping and the exact API body: `skills/newsletter/references/token-map.md`.
 3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
 4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /v1/lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
 5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain via `security`; Linux `secret-tool`/libsecret with a `pass` fallback), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
@@ -140,7 +142,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.2.1)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.3.0)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 
@@ -148,5 +150,5 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 - The skill sends **campaigns** (one-to-many), not transactional email. `{contact.firstName}` is the only personalization channel.
 - Loops auto-appends the campaign footer + unsubscribe link — the template does **not** author one.
-- Web fonts (Fraunces/Inter/JetBrains Mono) render only in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to Georgia/Arial. Short headlines + italic-coral emphasis + coral top-bar carry the brand in fallback.
+- Archivo renders only in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to system-ui/Arial. Hierarchy is carried by size, weight, tracking and color — all of which survive the fallback — plus the raspberry top-bar and teal kicker rule.
 - Dark mode is **survived, not controlled** (no `@media` in LMX): warm-not-pure hex, coral-ink button text, mid-tone logo.

@@ -1,5 +1,10 @@
 # PromptMetrics Newsletter Skill — Loops API Verification + Email Template Design
 
+> **⚠️ SUPERSEDED IN PART (2026-08-31).** The palette, font stacks and dark-mode rules in this document describe the retired warm-"Paper" design system (`#f4efe7` / `#d97757` / Fraunces + Inter + JetBrains Mono). The current design system is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue, and **one font family (Archivo)** — defined in `pm-website/app/styles/v3-tokens.css`.
+>
+> For anything token-, color-, font- or template-structure related, **`skills/newsletter/references/token-map.md` and `lmx-master-template.md` are authoritative**, not this file. Two specific claims here are now wrong: Themes are **writable** via the API (`POST /v1/themes`, `POST /v1/themes/{themeId}`), and `themeId="promptmetrics-paper"` is not a real handle. The API-capability findings and the verification procedure remain useful.
+
+
 *Companion to `newsletter-skill-plan.md`. Researched against the live Loops.so docs (July 2026) via a 3-agent ultracode workflow: API-surface verification, LMX/email-constraint research, and template-design synthesis.*
 
 *Product decisions locked with the user: **mixed-issue** shape, **one master template** with conditionals, **Notion DB** as the brief backbone (Phase 1b).*
@@ -8,7 +13,7 @@
 
 ## Context
 
-Two questions: (1) can the **current** Loops.so API support the skill in `newsletter-skill-plan.md`, and (2) how do we create the email newsletter template in Loops.so to match the PromptMetrics Paper design system (`pm-website/designs/promptmetrics-design-system`), mobile-first.
+Two questions: (1) can the **current** Loops.so API support the skill in `newsletter-skill-plan.md`, and (2) how do we create the email newsletter template in Loops.so to match the PromptMetrics Sea Glass design system (`pm-website/designs/promptmetrics-design-system`), mobile-first.
 
 **Bottom line: the API supports the skill — with gaps.** One assumption in the plan is wrong and changes the build.
 
@@ -122,7 +127,7 @@ Body vars (inline `{contact.*}` only for greeting): `issue_number`, `issue_date`
 
 ### Build path in Loops
 **One-time, manual in UI** (Themes/Components are read-only via API as of July 2026):
-1. Create Theme **"PromptMetrics Paper"** with the token values + font stacks + heading sizes + `buttonBorderRadius=999` + `body*Padding=24`.
+1. Create Theme **"PromptMetrics Sea Glass"** with the token values + font stacks + heading sizes + `buttonBorderRadius=999` + `body*Padding=24`.
 2. (Optional) Create reusable `<Component>` blocks for the Paper card + prompt callout.
 3. Upload the logo mark via `POST /uploads` → Loops-hosted static URL.
 Then **per-issue** the skill runs the flow above, assembling LMX against `themeId="promptmetrics-paper"`.
@@ -146,7 +151,7 @@ Then **per-issue** the skill runs the flow above, assembling LMX against `themeI
 
 1. **Sending domain + `fromName`/`fromEmail` configured in Loops?** (`POST /campaigns` 400s if not.) e.g. "PromptMetrics Field Notes" / "fieldnotes".
 2. **Which mailing list(s)** + is there an "engaged" segment? (`GET /lists` returns names only — confirm the list ID in the UI.)
-3. **"PromptMetrics Paper" Theme:** pre-create in UI now, or include step-by-step UI instructions in the build?
+3. **"PromptMetrics Sea Glass" Theme:** pre-create in UI now, or include step-by-step UI instructions in the build?
 4. **Logo variant for dark-mode safety:** reverse mark in a fixed-color chip (recommended) vs. a new mid-tone pinwheel?
 5. `{contact.firstName}` greeting + "there" fallback, or unpersonalized body (avoids the no-fallback-no-send failure)?
 6. Key-point cards: default 3, max 5; whole-card clickable vs. "read more" link only?
@@ -160,7 +165,7 @@ Plus the plan's own open items: the ~6 required brief fields, and the who-can-ap
 
 ## Verification (how to test end-to-end)
 
-1. **Theme exists:** `GET /themes` lists "PromptMetrics Paper"; `GET /themes/{id}` returns the token map.
+1. **Theme exists:** `GET /themes` lists "PromptMetrics Sea Glass"; `GET /themes/{id}` returns the token map.
 2. **Dry create + content:** `POST /campaigns` (Draft) → `POST /email-messages/{id}` with a minimal LMX (`<Style themeId/><Paragraph>test</Paragraph>`) → 200, not 409.
 3. **LMX brand proof:** assemble a full mixed-issue LMX, set it, then `POST /email-messages/{id}/preview` to the author — **open in Apple Mail (light + dark) and Gmail (light + dark)** to confirm: Fraunces loads on Apple, Georgia fallback on Gmail, 18px cards (square in Outlook Classic), italic-coral emphasis word renders coral, coral top-bar visible, button ≥44px, no clipping.
 4. **Guardian + gap-fillers:** `GET /email-messages/{id}/guardian` returns clean; skill's spam scan flags a planted "free"/"act now" term; skill's HTTP check flags a planted 404 link.
@@ -175,7 +180,7 @@ Plus the plan's own open items: the ~6 required brief fields, and the who-can-ap
 1. Scaffold `promptmetrics/newsletter-skill` repo per the plan's layout; install Loops skills (`curl -fsSL https://install.loops.so/skills | sh`).
 2. Draft `SKILL.md` for Phase 1a as an **LMX-generator** workflow (interview → brief → LMX → preview → send) on top of the shipped Loops API/LMX skills — **not** an HTML workflow.
 3. Lock decisions 1–9 above + the 6 required brief fields + who-can-send policy.
-4. (Manual, one-time) create the "PromptMetrics Paper" Theme + Components in the Loops UI; upload the dark-mode-safe logo.
+4. (Manual, one-time) create the "PromptMetrics Sea Glass" Theme + Components in the Loops UI; upload the dark-mode-safe logo.
 5. Build the master-template LMX assembler + the spam/link gap-fillers; run the verification sequence.
 
 ---

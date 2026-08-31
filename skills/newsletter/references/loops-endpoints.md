@@ -11,11 +11,16 @@ Confirm exact tool names against the installed Loops API skill's `SKILL.md` and 
 Use this to confirm the key is valid before doing anything else. It runs at **Step 0 of the first real run, after the post-onboarding shell restart** (the key is not in env during the onboarding session itself, so validation cannot run there). **401** → the key is wrong or revoked; have the user re-enter it via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh set`, then re-run `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh install-line` (idempotent) and `exec $SHELL -l`, and re-run. Do not proceed past Step 0 until this returns 200.
 
 ## Step 0 — prerequisites
-`GET /v1/themes` → paginated `{ pagination, data: [{ id, name, styles, isDefault, createdAt, updatedAt }] }`. **Paginated**: `perPage` 10–50, advance via `pagination.nextCursor`. Loop pages until a theme with `name == "PromptMetrics Paper"` is found or pages are exhausted before concluding it is missing. If missing, stop (one-time UI setup in README).
+`GET /v1/themes` → paginated `{ pagination, data: [{ id, name, styles, isDefault, createdAt, updatedAt }] }`. **Paginated**: `perPage` 10–50, advance via `pagination.nextCursor`. Loop pages until a theme with `name == "PromptMetrics Sea Glass"` is found or pages are exhausted before concluding it is missing. If missing, stop (one-time UI setup in README).
 
-**Capture the theme id.** `data[].id` is an opaque value (e.g. `cm_…`), not a slug. When `name == "PromptMetrics Paper"`, record its `id` as `<themeId>` — it is needed for `POST /v1/themes/{themeId}` reconciliation in M3, and it is one candidate for `<Style themeId="…" />` in the assembled LMX. The OpenAPI does not state what value `<Style themeId>` accepts (llms-full.txt's only example uses the theme *name* `"default"`, not an opaque id); the correct form for this template is decided by an empirical A/B test (opaque id vs. theme name `"PromptMetrics Paper"`), not asserted here.
+**Capture the theme id.** `data[].id` is an opaque value (e.g. `cm_…`), not a slug. When `name == "PromptMetrics Sea Glass"`, record its `id` as `<themeId>` — it is needed for `POST /v1/themes/{themeId}` reconciliation in M3, and it is one candidate for `<Style themeId="…" />` in the assembled LMX. **Resolved empirically (2026-08-31): `<Style themeId>` takes the opaque `data[].id`** (e.g. `cmrngnrqv…`). Passing the theme *name* returns `422 <Style> references unknown themeId`. No A/B test is outstanding.
 
 ## Step 2 — create draft campaign
+
+> **Reading `scheduling` back is NOT a safety check.** A freshly created Draft returns `"scheduling": {"method":"now","timestamp":null}` even though no `scheduling` field was ever sent — that is the API's default representation, not a pending send. Do not treat a `GET` showing `method:"now"` as a failure of the never-auto-fire rule, and never "correct" it.
+>
+> The real invariant is about **writes, not reads**: never include a `scheduling` field in a `POST /v1/campaigns/{campaignId}` body until Gate 2 has passed. That POST is what actually fires the send. Verify the campaign is safe with `status == "Draft"` and `sentAt == null`, not with the `scheduling` value.
+
 `POST /v1/campaigns` → **201** `{ id, name, status: "Draft", emailMessageId, emailMessageContentRevisionId }`.
 - Body: `{ name, mailingListId? }`
 - Returns: `id` (campaignId), `emailMessageId`, `emailMessageContentRevisionId` — **capture all three**.
