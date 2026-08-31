@@ -1,100 +1,86 @@
 # LMX Master Template — "Field Notes" Mixed Issue
 
-The 12-section LMX skeleton the assembler emits. `{{variable}}` placeholders are filled from the brief; `key_points[]` and `body_blocks[]` expand into repeated/concrete blocks (LMX has **no loops or conditionals**). One `<Style themeId="{{theme_id}}"/>` is always the first line. `{{theme_id}}` is captured from `GET /v1/themes` at run time; the OpenAPI contract does **not** state what value `<Style themeId="...">` accepts, so its form (opaque `data[].id` from the Themes response vs. the theme's name, e.g. `"PromptMetrics Paper"`) is decided by an empirical A/B test — do not assert one form over the other. **No footer** — Loops auto-appends the campaign footer + `{system.unsubscribe_link}`; do not author it.
+The 12-section LMX skeleton the assembler emits. `{{variable}}` placeholders are filled from the brief; `key_points[]` and `body_blocks[]` expand into repeated/concrete blocks (LMX has **no loops or conditionals**). One `<Style themeId="{{theme_id}}"/>` is always the first line. `{{theme_id}}` is captured from `GET /v1/themes` at run time; the OpenAPI contract does **not** state what value `<Style themeId="...">` accepts, and it is the **opaque `data[].id`** (e.g. `cmrngnrqv…`), confirmed empirically on 2026-08-31 — passing the theme *name* returns `422 <Style> references unknown themeId`. **No footer** — Loops auto-appends the campaign footer + `{system.unsubscribe_link}`; do not author it.
 
-All hex values are inlined per `token-map.md`. Fonts come from the Theme, not per-block.
+All hex values are inlined per `token-map.md`. The font comes from the Theme (one family, Archivo) — never per-block.
+
+## Structural rules this skeleton obeys
+
+Read `lmx-notes.md` before editing. The three that shape the markup:
+
+1. **Sections cannot nest.** There is exactly one `<Section>` per card, with no outer spacing wrapper. Vertical rhythm comes from each block's own `paddingTop`/`paddingBottom`.
+2. **Color lives on inline tags.** `<Paragraph>`/`<H1>`-`<H3>`/`<Quote>` take no `textColor`; wrap content in `<Text textColor="…">`. Heading color comes from the Theme.
+3. **Padding is four numeric attributes**, never a shorthand string.
+4. **`<Br/>` is inline-only.** Allowed top-level tags are exactly: `H1 H2 H3 Paragraph Quote CodeBlock Button Image Divider OrderedList UnorderedList Columns Component For Icons Section Style`. Spacing between blocks comes from `paddingTop`/`paddingBottom`, never a `<Br/>`.
+5. **Muted `#5e6f68` is sheet-only.** It clears AA on `#e9f1ee` (4.63:1) but *not* on the `#e0ebe7` card (4.36:1). On cards, 13px labels/indices use teal-dark `#276358` and 13px prose uses ink-2 `#39443f`.
 
 ## Skeleton
 
 ```xml
-<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>
+<Style themeId="{{theme_id}}" backgroundColor="#d2e1db" bodyColor="#e9f1ee" bodyXPadding="24" bodyYPadding="24"/>
 
 <!-- 1. Preheader = the message `previewText` field, not an LMX block. -->
 
-<!-- 2–3. Masthead -->
-<Section blockColor="#f4efe7" padding="0 24 16 24">
-  <Columns widths="28,72" stackOnMobile="true">
-    <Section><Image src="{{hero_logo_url}}" alt="PromptMetrics pinwheel" width="28"/></Section>
-    <Section verticalAlign="middle"><Text color="#6f665a" fontSize="13" fontFamily="monospace">{{masthead_label}} · ISSUE {{issue_number}}</Text></Section>
-  </Columns>
-  <Divider color="#d97757" thickness="1"/>
-</Section>
+<!-- 2-3. Masthead -->
+<Columns widths="28,72" gap="12" verticalAlignment="middle" stackOnMobile="true" paddingBottom="12">
+  <ColumnItem>
+    <Image src="{{hero_logo_url}}" alt="PromptMetrics pinwheel" width="28"/>
+  </ColumnItem>
+  <ColumnItem>
+    <Paragraph fontSize="13"><Text textColor="#5e6f68">{{masthead_label}} · ISSUE {{issue_number}}</Text></Paragraph>
+  </ColumnItem>
+</Columns>
+<Divider color="#3f8f82" borderWidth="1" paddingBottom="16"/>
 
-<!-- 4. Kicker + Headline (exactly one italic-coral emphasis word) -->
-<Section padding="16 24 8 24">
-  <Text color="#a1482a" fontSize="12" fontFamily="monospace">— {{kicker}}</Text>
-</Section>
-<Section padding="0 24 16 24">
-  <H1><Text>{{headline_before_em}}</Text><Em><Text color="#a1482a">{{emphasis_word}}</Text></Em><Text>{{headline_after_em}}</Text></H1>
-</Section>
+<!-- 4. Kicker + Headline (exactly one italic-raspberry emphasis word) -->
+<Paragraph fontSize="12" paddingBottom="8"><Text textColor="#276358">— {{kicker}}</Text></Paragraph>
+<H1 paddingBottom="16">{{headline_before_em}}<Em textColor="#8a2c4e">{{emphasis_word}}</Em>{{headline_after_em}}</H1>
 
 <!-- 5. Lede -->
-<Section padding="0 24 16 24">
-  <Paragraph color="#43403a" fontSize="18">{{lede}}</Paragraph>
-</Section>
+<Paragraph fontSize="18" paddingBottom="16"><Text textColor="#39443f">{{lede}}</Text></Paragraph>
 
 <!-- 6. Byline -->
-<Section padding="0 24 24 24">
-  <Text color="#6f665a" fontSize="13" fontFamily="monospace">{{author_name}} · {{issue_date}} · {{read_time}} min</Text>
-</Section>
+<Paragraph fontSize="13" paddingBottom="24"><Text textColor="#5e6f68">{{author_name}} · {{issue_date}} · {{read_time}} min</Text></Paragraph>
 
-<!-- 7. Hero image — OMIT ENTIRELY if {{hero_image_url}} is empty -->
-<Section padding="0 24 24 24">
-  <Section blockColor="#efe8db" blockBorderRadius="18" blockBorder="1px #cabfac" padding="0">
-    <Divider color="#d97757" thickness="3"/>
-    <Section padding="16"><Image src="{{hero_image_url}}" alt="{{hero_image_alt}}" width="100%"/></Section>
-  </Section>
-</Section>
+<!-- 7. Hero image — OMIT ENTIRELY if {{hero_image_url}} is empty.
+     Image carries its own radius; no card Section needed. -->
+<Image src="{{hero_image_url}}" alt="{{hero_image_alt}}" width="552" borderRadius="18" align="center"/>
 
 <!-- 8. Key-points card stack — EXPAND: one card <Section> per element of key_points[]
-     (default 3, max 5). Repeat this block N times with {{kp_*}} filled per element. -->
-<Section padding="0 24 16 24">
-  <Section blockColor="#efe8db" blockBorderRadius="18" blockBorder="1px #cabfac" padding="0">
-    <Divider color="#d97757" thickness="3"/>
-    <Section padding="20">
-      <Text color="#6f665a" fontSize="13" fontFamily="monospace">{{kp_number}}</Text>
-      <H3>{{kp_title}}</H3>
-      <Paragraph color="#43403a" fontSize="16">{{kp_description}}</Paragraph>
-      <!-- optional link — include only if kp_link_url is non-empty -->
-      <Text color="#a1482a" fontSize="13"><Link href="{{kp_link_url}}">{{kp_link_label}}</Link></Text>
-    </Section>
-  </Section>
+     (default 3, max 5). Repeat this block N times with {{kp_*}} filled per element.
+     paddingLeft/Right="0" on the Section so the top-bar runs edge-to-edge;
+     inner blocks inset themselves by 20. -->
+<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
+  <Divider color="#b8446a" borderWidth="3"/>
+  <Paragraph fontSize="13" paddingTop="16" paddingLeft="20" paddingRight="20"><Text textColor="#276358">{{kp_number}}</Text></Paragraph>
+  <H3 paddingLeft="20" paddingRight="20">{{kp_title}}</H3>
+  <Paragraph fontSize="16" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">{{kp_description}}</Text></Paragraph>
+  <!-- optional link — include only if kp_link_url is non-empty -->
+  <Paragraph fontSize="13" paddingTop="8" paddingLeft="20" paddingRight="20"><Link href="{{kp_link_url}}">{{kp_link_label}}</Link></Paragraph>
 </Section>
 
 <!-- 9. Editorial body — EXPAND: concatenate body_blocks[] LMX fragments in order -->
-<Section padding="8 24 24 24">
-  {{body_blocks_expanded}}
-</Section>
+{{body_blocks_expanded}}
 
-<!-- 10. Italic "prompt" callout — OMIT if {{prompt_quote}} is empty -->
-<Section padding="0 24 24 24">
-  <Section blockColor="#efe8db" blockBorderRadius="18" blockBorder="1px #cabfac" padding="0">
-    <Section padding="0 0 0 3px" borderLeft="3px #d97757">
-      <Section padding="20">
-        <Quote fontFamily="serif" fontStyle="italic" color="#43403a" fontSize="18">{{prompt_quote}}</Quote>
-        <!-- attribution line — include only if prompt_attribution is non-empty -->
-        <Text color="#6f665a" fontSize="13" fontFamily="monospace">— {{prompt_attribution}}</Text>
-      </Section>
-    </Section>
-  </Section>
+<!-- 10. Italic "prompt" callout — OMIT if {{prompt_quote}} is empty.
+     Raspberry top-bar stands in for the site's left rule (no borderLeft in LMX). -->
+<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="20" paddingLeft="0" paddingRight="0">
+  <Divider color="#b8446a" borderWidth="3"/>
+  <Quote fontSize="18" paddingTop="16" paddingLeft="20" paddingRight="20"><Em textColor="#161c1a">{{prompt_quote}}</Em></Quote>
+  <!-- attribution line — include only if prompt_attribution is non-empty -->
+  <Paragraph fontSize="13" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">— {{prompt_attribution}}</Text></Paragraph>
 </Section>
 
 <!-- 11. Primary CTA card -->
-<Section padding="0 24 24 24">
-  <Section blockColor="#efe8db" blockBorderRadius="18" blockBorder="1px #cabfac" padding="0">
-    <Divider color="#d97757" thickness="3"/>
-    <Section padding="24" align="center">
-      <H3>{{cta_headline}}</H3>
-      <Paragraph color="#43403a" fontSize="16">{{cta_supporting}}</Paragraph>
-      <Button backgroundColor="#d97757" color="#2a160e" borderRadius="999" padding="13 32" href="{{cta_url}}">{{cta_label}}</Button>
-    </Section>
-  </Section>
+<Section blockColor="#e0ebe7" blockBorderRadius="18" paddingTop="0" paddingBottom="24" paddingLeft="0" paddingRight="0">
+  <Divider color="#b8446a" borderWidth="3"/>
+  <H3 align="center" paddingTop="20" paddingLeft="20" paddingRight="20">{{cta_headline}}</H3>
+  <Paragraph fontSize="16" align="center" paddingTop="8" paddingLeft="20" paddingRight="20"><Text textColor="#39443f">{{cta_supporting}}</Text></Paragraph>
+  <Button href="{{cta_url}}" bgColor="#b8446a" textColor="#ffffff" borderRadius="999" innerXPadding="32" innerYPadding="13" align="center" paddingTop="16">{{cta_label}}</Button>
 </Section>
 
 <!-- 12. Sign-off (footer + unsubscribe auto-appended by Loops — do not author) -->
-<Section padding="0 24 24 24">
-  <Text color="#6f665a" fontSize="13" fontFamily="monospace">— {{author_name}}, {{company}}</Text>
-</Section>
+<Paragraph fontSize="13"><Text textColor="#5e6f68">— {{author_name}}, {{company}}</Text></Paragraph>
 ```
 
 ## Variable slots
@@ -102,9 +88,9 @@ All hex values are inlined per `token-map.md`. Fonts come from the Theme, not pe
 | Slot | Source (brief) | Type | Notes |
 |---|---|---|---|
 | `hero_logo_url` | `hero_logo_url` (brief; sourced from the one-time `POST /v1/uploads`) | string | Dark-mode-safe variant; Step 0 fail-stops if absent |
-| `masthead_label` | `masthead_label` | string | Default `"FIELD NOTES"` |
+| `masthead_label` | `masthead_label` | string | Default `"FIELD NOTES"`; emit uppercase |
 | `issue_number` | `issue_metadata.issue_number` | string | |
-| `kicker` | `kicker` | string | Mono uppercase |
+| `kicker` | `kicker` | string | Uppercase; teal |
 | `headline_before_em` / `emphasis_word` / `headline_after_em` | `headline` split at `emphasis_word` | string×3 | Exactly one emphasis word |
 | `lede` | `lede` | string | |
 | `author_name` | `issue_metadata.author` | string | |
@@ -123,19 +109,20 @@ Message-level fields (not in LMX): `subject`, `previewText` (from `preview_text`
 ## Expansion rules
 
 ### `key_points[]` → repeated card blocks
-- Each element `{title, description, link_url?, link_label?}` emits the §8 card block once.
+- Each element `{title, description, link_url?, link_label?}` emits the §8 card block once. Do **not** separate cards with `<Br/>` — it is inline-only and 422s at top level; Loops spaces sibling blocks on its own.
 - **Default 3 cards, max 5.** If the brief has fewer than 3, ask the author whether to pad or ship fewer (do not silently pad). If more than 5, truncate to the first 5 and warn the author.
 - `{{kp_number}}` = zero-padded index (`01`, `02`, …).
-- Include the `<Text><Link>` line **only if** `link_url` is non-empty; otherwise omit it. If `link_url` is set but `link_label` is empty, default the label to `"Read more"`.
+- Include the link `<Paragraph>` **only if** `link_url` is non-empty; otherwise omit it. If `link_url` is set but `link_label` is empty, default the label to `"Read more"`. The `<Link>` inherits `textLinkColor` (`#8a2c4e`) from the Theme — do not set a color on it.
 
 ### `body_blocks[]` → concatenated fragments
 - Each element is an LMX fragment string (`<Paragraph>…</Paragraph>`, `<H2>…</H2>`, `<UnorderedList>…</UnorderedList>`, `<Quote>…</Quote>`).
-- **Validate each fragment** before concatenation: PascalCase tag, properly closed. Reject and ask the author to fix if invalid.
-- Concatenate in array order inside the §9 `<Section>`. Separate with no extra markup (the fragments carry their own spacing).
+- **Validate each fragment** before concatenation: PascalCase tag, properly closed, and **no `<Section>`** (a fragment carrying a Section breaks the flat structure).
+- Body-copy color: fragments should wrap prose in `<Text textColor="#39443f">` for the lede-grey voice, or leave it bare to inherit `textBaseColor` (`#161c1a`).
+- Concatenate in array order. Separate with no extra markup (the fragments carry their own spacing).
 
 ### Optional-section stripping
-- §7 (hero): strip the whole `<Section>` if `hero_image_url` is empty/absent.
-- §10 (callout): strip the whole `<Section>` if `prompt_quote` is empty/absent; strip just the attribution `<Text>` if `prompt_attribution` is empty.
+- §7 (hero): strip the `<Image>` if `hero_image_url` is empty/absent. The URL **must be Loops-CDN-hosted** (upload flow) — an external URL 422s.
+- §10 (callout): strip the whole `<Section>` if `prompt_quote` is empty/absent; strip just the attribution `<Paragraph>` if `prompt_attribution` is empty.
 
 ## 100KB cap (API) / 102KB (Gmail clip)
 
@@ -147,4 +134,6 @@ Measure the final assembled LMX string **after assembly, before `POST /v1/email-
 
 ## Theme injection
 
-`<Style themeId="{{theme_id}}" backgroundColor="#f4efe7" bodyXPadding="24" bodyYPadding="24"/>` is always the **first line**. The Theme (fonts, heading sizes, button radius, body padding, link color) is **created or verified via the API** at onboarding (`POST /v1/themes` if missing, else `GET /v1/themes` and capture the `id`) — see `onboarding.md` step 2 and `token-map.md` for the `ThemeStyles`-aligned body. The manual Loops UI path is the **fallback** (e.g. if the team's Content API is not enabled) — see README "One-time Loops UI setup".
+`<Style themeId="{{theme_id}}" backgroundColor="#d2e1db" bodyColor="#e9f1ee" bodyXPadding="24" bodyYPadding="24"/>` is always the **first line**. Both surface colors are re-declared here so the mint ladder survives even if the Theme lookup returns an unexpected theme; the Theme still owns the font, heading sizes, link color, button styling and divider default.
+
+The Theme ("PromptMetrics Sea Glass") is **created or verified via the API** at onboarding (`POST /v1/themes` if missing, else `GET /v1/themes` and capture the `id`) — see `onboarding.md` step 2 and `token-map.md` for the `ThemeStyles`-aligned body. The manual Loops UI path is the **fallback** (e.g. if the team's Content API is not enabled) — see README "One-time Loops UI setup".

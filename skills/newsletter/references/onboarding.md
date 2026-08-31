@@ -48,13 +48,13 @@ Why **not** `~/.zshenv`: it runs on **every** zsh, including non-interactive scr
 - **The skill never runs `loops-key.sh get` at runtime, and never emits `LOOPS_API_KEY="$(.../loops-key.sh get)"` inline.** `get` is a manual escape hatch only (for the user to run in their own terminal, piped into an env var). The key enters the environment solely via the keychain-read line `install-line` writes, which runs at shell startup outside any Claude session.
 - The skill itself only ever calls `status` (boolean) in-session. It never reads the key into the conversation.
 
-## 2. Design system / template — the "PromptMetrics Paper" Theme
+## 2. Design system / template — the "PromptMetrics Sea Glass" Theme
 
 The Theme is created/verified **via the Loops API** (Themes are writable in OpenAPI v1.19.0: `POST /v1/themes` and `POST /v1/themes/{themeId}`). The Loops UI path remains a **fallback** when the API path fails. Canonical token values live in `references/token-map.md`.
 
 ### 2a. Look for an existing Theme — `GET /v1/themes`
 
-`GET /v1/themes` is **paginated**: it returns `{ pagination, data: [...] }` where `data[].id` is an **opaque** value (e.g. `cm_...`), not a slug. Paginate with `perPage` (10–50) and `pagination.nextCursor` — loop pages until a Theme with `name == "PromptMetrics Paper"` is found **or** pages are exhausted. Only after exhausting pages may you conclude the Theme is missing.
+`GET /v1/themes` is **paginated**: it returns `{ pagination, data: [...] }` where `data[].id` is an **opaque** value (e.g. `cm_...`), not a slug. Paginate with `perPage` (10–50) and `pagination.nextCursor` — loop pages until a Theme with `name == "PromptMetrics Sea Glass"` is found **or** pages are exhausted. Only after exhausting pages may you conclude the Theme is missing.
 
 ```http
 GET /v1/themes?perPage=50
@@ -69,36 +69,41 @@ Store the matched Theme's `data[].id` (the opaque `cm_...` value). This id is us
 - `POST /v1/themes/{themeId}` — to reconcile the Theme's styles to the exact `token-map.md` values below (optional; run if the stored styles have drifted), and
 - `<Style themeId="...">` — as a **candidate** value for the LMX `<Style />` tag's `themeId` attribute.
 
-> **Do not assert which form `<Style themeId>` accepts.** The OpenAPI spec does not state it. `llms-full-txt`'s only example is `<Style themeId="default" />`, where `"default"` is a Theme **name** (the `isDefault` Theme), not an opaque id. The committed form — opaque id vs Theme name `"PromptMetrics Paper"` — is decided by an **empirical A/B test** in Verification. Treat both the captured opaque id **and** the literal name `"PromptMetrics Paper"` as candidates until that test runs.
+> **Resolved empirically (2026-08-31): `<Style themeId>` takes the opaque `data[].id`** (e.g. `cmrngnrqv…`). Passing the theme *name* returns `422 <Style> references unknown themeId`. No A/B test is outstanding. Capture `data[].id` and pass exactly that into `<Style themeId>`.
 
 ### 2c. If missing — create it via `POST /v1/themes`
 
-`POST /v1/themes` with the Paper token values from `token-map.md` (name `"PromptMetrics Paper"` + the `ThemeStyles` keys, which match the LMX `<Style />` attribute names):
+`POST /v1/themes` with the Paper token values from `token-map.md` (name `"PromptMetrics Sea Glass"` + the `ThemeStyles` keys, which match the LMX `<Style />` attribute names):
 
 | ThemeStyles key | Value |
 |---|---|
-| `backgroundColor` | `#f4efe7` |
-| `textBaseColor` | `#1c1c1c` |
-| `textLinkColor` | `#a1482a` |
-| `buttonBodyColor` | `#d97757` |
-| `buttonTextColor` | `#2a160e` |
+| `backgroundColor` | `#d2e1db` (outer canvas) |
+| `bodyColor` | `#e9f1ee` (email sheet) |
+| `textBaseColor` | `#161c1a` |
+| `textLinkColor` | `#8a2c4e` |
+| `buttonBodyColor` | `#b8446a` |
+| `buttonTextColor` | `#ffffff` |
 | `buttonBorderRadius` | `999` |
+| `dividerColor` | `#cddcd6` |
+| `borderColor` | `#cddcd6` |
 | `borderRadius` | `18` |
 | `bodyXPadding` | `24` |
 | `bodyYPadding` | `24` |
-| Heading font | `Fraunces, ui-serif, Georgia, serif` |
-| Body font | `Inter, ui-sans-serif, Arial, sans-serif` |
-| Labels font | `JetBrains Mono, ui-monospace, Consolas, monospace` |
-| H1 / H2 / H3 / body sizes | 32 / 24 / 20 / 16 |
+| `bodyFontFamily` | `Archivo, system-ui, Arial, sans-serif` |
+| `bodyFontCategory` | `sans-serif` |
+| `heading1/2/3FontSize` | 32 / 24 / 20 |
+| `textBaseFontSize` | 16 |
 | Document meta | `color-scheme: light dark` |
+
+**One font family only.** ThemeStyles has no `headingFontFamily` and no `monoFontFamily` — `bodyFontFamily` sets the whole email. Do not send `h1FontSize` or `bodyFontSize` either; the real keys are `heading1FontSize` and `textBaseFontSize`. The full body, with every key verified against the schema, is in `token-map.md`.
 
 Note: ThemeStyles has **`bodyXPadding` / `bodyYPadding`** (and `backgroundXPadding` / `backgroundYPadding`) — there is no `bodyPadding` key. On success (`201`) capture the returned Theme `id` (feeds M2). A `401` here with an otherwise-valid key means the team's **Content API is not enabled** (distinct from the Step 0 `GET /v1/api-key` 401) — point the user to Loops Settings to enable it.
 
 ### 2d. Fallback — Loops UI
 
-If `POST /v1/themes` returns `400` / `403` / `401` (or the team has not enabled the Content API), fall back to the **manual** path: Loops UI → Themes → New, name **"PromptMetrics Paper"**, with the exact values in the table in 2c (plus the manual `Body padding: 24` mapping used by the UI). After the user creates it, **re-run 2a** — `GET /v1/themes` again, paginate, and capture the new Theme's `id` so M2 is satisfied either way.
+If `POST /v1/themes` returns `400` / `403` / `401` (or the team has not enabled the Content API), fall back to the **manual** path: Loops UI → Themes → New, name **"PromptMetrics Sea Glass"**, with the exact values in the table in 2c (plus the manual `Body padding: 24` mapping used by the UI). After the user creates it, **re-run 2a** — `GET /v1/themes` again, paginate, and capture the new Theme's `id` so M2 is satisfied either way.
 
-**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Paper"`, and its `id` is captured for use by `POST /v1/themes/{id}` and as a `<Style themeId>` candidate.
+**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Sea Glass"`, and its `id` is captured for use by `POST /v1/themes/{id}` and as a `<Style themeId>` candidate.
 
 ## 3. From address — sending domain + fromName / fromEmail
 
