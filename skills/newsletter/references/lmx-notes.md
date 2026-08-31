@@ -54,7 +54,7 @@ LMX has no `for`/`if`. Expand arrays yourself:
 ## No borders, no `box-shadow`
 Blocks accept only `blockColor`, `blockBorderRadius` and `padding*`. There is no block border attribute and no shadow, and both would be invisible in Gmail/Outlook/Yahoo anyway.
 
-Depth comes from the **mint surface ladder** instead: `#d2e1db` canvas → `#e9f1ee` sheet → `#e0ebe7` card. The card reads as raised with no border. See `token-map.md`.
+Depth comes from the **mint surface ladder** instead: an `#e9f1ee` sheet with `#d2e1db` cards tinted on it (the outer canvas reuses `#d2e1db`). Cards must be `#d2e1db`, not `#e0ebe7` — the latter is only 1.06:1 against the sheet and effectively disappears without a border. See `token-map.md`.
 
 (`<Image>` is the exception — it does have `borderRadius`, `borderWidth` and `borderColor`.)
 

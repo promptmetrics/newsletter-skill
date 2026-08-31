@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.4.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.4.1) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -142,7 +142,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.4.0)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.4.1)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 
