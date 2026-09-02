@@ -4,7 +4,7 @@
 # `/plugin install promptmetrics-newsletter@promptmetrics` brings them along.
 #
 # Usage:
-#   ./skills/newsletter/scripts/sync-loops-skills.sh [ref]   # default: v0.2.0
+#   ./plugins/newsletter/skills/newsletter/scripts/sync-loops-skills.sh [ref]   # default: v0.2.0
 #
 # After syncing, review the diff and commit. If you sync to a ref other than
 # the one pinned in NOTICE, update NOTICE (and this default) to match.
@@ -32,7 +32,7 @@ for s in $SKILLS; do
     fm == 1 && /^---/ {
       print; print "";
       print "<!-- Vendored from https://github.com/Loops-so/skills @ " ref " (MIT, Copyright (c) 2026 Loops). -->";
-      print "<!--      Synced via skills/newsletter/scripts/sync-loops-skills.sh — do not edit here; update upstream and re-sync. -->";
+      print "<!--      Synced via plugins/newsletter/skills/newsletter/scripts/sync-loops-skills.sh — do not edit here; update upstream and re-sync. -->";
       fm = 0; next
     }
     { print }
@@ -41,5 +41,5 @@ done
 
 echo ""
 echo "Synced 4 skills @ $REF into $SKILLS_DIR."
-echo "Next: review with 'git diff skills/loops-* NOTICE', then commit."
+echo "Next: review with 'git diff plugins/newsletter/skills/loops-* plugins/newsletter/NOTICE', then commit."
 echo "If $REF != v0.2.0, update the pinned ref in NOTICE and this script's default."

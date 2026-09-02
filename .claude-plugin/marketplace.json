@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "promptmetrics-newsletter",
-      "source": ".",
+      "source": "./plugins/newsletter",
       "description": "Opinionated newsletter workflow on top of Loops.so — brief to LMX to preview to send, with two human gates. Never auto-fires.",
       "homepage": "https://github.com/promptmetrics/newsletter-skill",
       "repository": "https://github.com/promptmetrics/newsletter-skill",
