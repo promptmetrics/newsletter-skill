@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.4.1) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.5.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -25,24 +25,24 @@ git clone https://github.com/promptmetrics/newsletter-skill
 cd newsletter-skill
 ```
 
-The four Loops skills (API / LMX / CLI / email) are **vendored** in `skills/loops-*` — no separate install step. Load the plugin for a session with `claude --plugin-dir .`, or copy it into `~/.claude/skills/` to auto-load.
+The four Loops skills (API / LMX / CLI / email) are **vendored** in `plugins/newsletter/skills/loops-*` — no separate install step. Load the plugin for a session with `claude --plugin-dir ./plugins/newsletter`, or copy that directory into `~/.claude/skills/` to auto-load.
 
 ### Per-machine prerequisites (either install path)
 
 One thing no install scope can provide for you — each machine needs it once:
-1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./skills/newsletter/scripts/loops-key.sh set` (macOS Keychain via `security`; on Linux via `secret-tool`/libsecret with a `pass` fallback). Onboarding then runs `./skills/newsletter/scripts/loops-key.sh install-line`, which writes a guarded keychain-read line to **both `~/.zprofile` and `~/.zshrc`** so it's sourced by login non-interactive zsh (the Bash tool) and interactive terminals alike, and asks you to **restart your shell**; Step 0 validates the key on the next run. See onboarding (`skills/newsletter/references/onboarding.md`).
+1. **Loops API key** — stored in your OS keychain, not a plaintext file: `./plugins/newsletter/skills/newsletter/scripts/loops-key.sh set` (macOS Keychain via `security`; on Linux via `secret-tool`/libsecret with a `pass` fallback). Onboarding then runs `./plugins/newsletter/skills/newsletter/scripts/loops-key.sh install-line`, which writes a guarded keychain-read line to **both `~/.zprofile` and `~/.zshrc`** so it's sourced by login non-interactive zsh (the Bash tool) and interactive terminals alike, and asks you to **restart your shell**; Step 0 validates the key on the next run. See onboarding (`plugins/newsletter/skills/newsletter/references/onboarding.md`).
 
 The Loops skills themselves ship bundled with the plugin (see "Vendored Loops skills" below) — no per-machine step for them. The first run walks you through the rest (design system/Theme, from address) via onboarding.
 
 ## Vendored Loops skills
 
-The four official Loops skills (`loops-api`, `loops-cli`, `loops-lmx`, `loops-email-sending-best-practices`) are vendored into this repo under `skills/loops-*` and declared in `.claude-plugin/marketplace.json`'s `skills` array, so `/plugin install promptmetrics-newsletter@promptmetrics` brings them along with **zero separate commands**. Each vendored `SKILL.md` carries an attribution header and each dir contains the upstream `LICENSE` (MIT, Copyright (c) 2026 Loops); see `NOTICE`.
+The four official Loops skills (`loops-api`, `loops-cli`, `loops-lmx`, `loops-email-sending-best-practices`) are vendored into this repo under `plugins/newsletter/skills/loops-*` and declared in `.claude-plugin/marketplace.json`'s `skills` array, so `/plugin install promptmetrics-newsletter@promptmetrics` brings them along with **zero separate commands**. Each vendored `SKILL.md` carries an attribution header and each dir contains the upstream `LICENSE` (MIT, Copyright (c) 2026 Loops); see `NOTICE`.
 
 **Maintainers — re-syncing from upstream:**
 
 ```bash
-./skills/newsletter/scripts/sync-loops-skills.sh          # default: v0.2.0
-./skills/newsletter/scripts/sync-loops-skills.sh v0.2.1   # or any tag/branch
+./plugins/newsletter/skills/newsletter/scripts/sync-loops-skills.sh          # default: v0.2.0
+./plugins/newsletter/skills/newsletter/scripts/sync-loops-skills.sh v0.2.1   # or any tag/branch
 ```
 
 This fetches `github.com/Loops-so/skills` at the given ref, copies the four skill dirs + their `LICENSE`, and rewrites the attribution headers. Review the diff, commit, and — if the ref changed — update the pinned ref in `NOTICE` and the script default. (`install-loops-skills.sh` is kept as a no-op stub so old docs don't break.)
@@ -64,14 +64,14 @@ The skill checks for these at Step 0 and will stop if missing.
    - Heading sizes: H1 32 / H2 24 / H3 20 / body 16
    - Document-level `<meta name="color-scheme" content="light dark">`
 
-   Palette is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue — from `pm-website/app/styles/v3-tokens.css`. Full mapping and the exact API body: `skills/newsletter/references/token-map.md`.
+   Palette is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue — from `pm-website/app/styles/v3-tokens.css`. Full mapping and the exact API body: `plugins/newsletter/skills/newsletter/references/token-map.md`.
 3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
 4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /v1/lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
 5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain via `security`; Linux `secret-tool`/libsecret with a `pass` fallback), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
    ```
-   ./skills/newsletter/scripts/loops-key.sh set           # types the key silently
-   ./skills/newsletter/scripts/loops-key.sh status        # -> stored
-   ./skills/newsletter/scripts/loops-key.sh install-line  # writes the keychain-read line
+   ./plugins/newsletter/skills/newsletter/scripts/loops-key.sh set           # types the key silently
+   ./plugins/newsletter/skills/newsletter/scripts/loops-key.sh status        # -> stored
+   ./plugins/newsletter/skills/newsletter/scripts/loops-key.sh install-line  # writes the keychain-read line
    ```
    To make it available to the Loops API skill, `install-line` writes a guarded keychain-read export to **both `~/.zprofile` and `~/.zshrc`** (login non-interactive zsh — the Bash tool — sources `~/.zprofile`; your interactive terminals source `~/.zshrc`; the `[ -z ]` guard reads the keychain at most once), with your confirmation. The macOS line it writes:
    ```sh
@@ -81,7 +81,7 @@ The skill checks for these at Step 0 and will stop if missing.
 
 ## Who can send
 
-Only users listed in `skills/newsletter/references/senders.md` (or the `NEWSLETTER_SENDERS` env var, comma-separated) can fire the send at **Gate 2**. To add a sender, edit that file or set the env var. The skill enforces this check — it is **not** Loops-side RBAC, and not cryptographic; it's team-discipline enforcement that makes the irreversible send a deliberate, attributed act. **Replace the placeholder emails before first send.**
+Only users listed in `plugins/newsletter/skills/newsletter/references/senders.md` (or the `NEWSLETTER_SENDERS` env var, comma-separated) can fire the send at **Gate 2**. To add a sender, edit that file or set the env var. The skill enforces this check — it is **not** Loops-side RBAC, and not cryptographic; it's team-discipline enforcement that makes the irreversible send a deliberate, attributed act. **Replace the placeholder emails before first send.**
 
 The current user is resolved from `NEWSLETTER_SENDER` env → git `user.email` → Claude Code session identity.
 
@@ -97,7 +97,7 @@ The current user is resolved from `NEWSLETTER_SENDER` env → git `user.email` �
 8. **Gate 2 — confirm send** — **STOP**; allowlist check; `scheduling` still unset.
 9. **Send** — `POST /v1/campaigns/{id} { scheduling:{method:"now"} }` only after an explicit "send".
 
-Full procedure: `skills/newsletter/SKILL.md`. Endpoint contracts: `skills/newsletter/references/loops-endpoints.md`.
+Full procedure: `plugins/newsletter/skills/newsletter/SKILL.md`. Endpoint contracts: `plugins/newsletter/skills/newsletter/references/loops-endpoints.md`.
 
 ## Verification (end-to-end)
 
@@ -142,7 +142,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.4.1)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.5.0)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 
