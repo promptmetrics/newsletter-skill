@@ -152,3 +152,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 - Loops auto-appends the campaign footer + unsubscribe link — the template does **not** author one.
 - Archivo renders only in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to system-ui/Arial. Hierarchy is carried by size, weight, tracking and color — all of which survive the fallback — plus the raspberry top-bar and teal kicker rule.
 - Dark mode is **survived, not controlled** (no `@media` in LMX): warm-not-pure hex, coral-ink button text, mid-tone logo.
+
+---
+
+Built by [Izzy Aly](https://github.com/iiizzzyyy) at [PromptMetrics](https://github.com/promptmetrics).
