@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A Claude Code **plugin** (`promptmetrics-newsletter`, v0.6.0) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `plugins/newsletter/skills/newsletter/SKILL.md` and its `references/`; the only executable code is `plugins/newsletter/skills/newsletter/scripts/`.
+A Claude Code **plugin** (`promptmetrics-newsletter`, v0.6.1) that bundles five skills to turn a newsletter brief into a sent Loops.so campaign. There is **no build system, test suite, linter, or package manager** — it is prose, shell scripts, and JSON manifests. Do not run `make`/`npm test`/`pytest` here; there is nothing to build or run headlessly. The skill's behavior is defined in `plugins/newsletter/skills/newsletter/SKILL.md` and its `references/`; the only executable code is `plugins/newsletter/skills/newsletter/scripts/`.
 
 ## Architecture (the big picture that spans files)
 
