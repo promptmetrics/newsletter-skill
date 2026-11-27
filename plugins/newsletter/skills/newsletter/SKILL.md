@@ -92,7 +92,7 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 8. **100KB cap** — measure the final string. Over → trim body to 8 paragraphs + append `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>` → reduce cards to 3 + trim descriptions → if still over, **fail** with "Issue content exceeds 100KB even after trimming. Reduce body length or move content to a web link." Do not call the API.
 
 ### Step 4 — Set email content (delegate → Loops API skill)
-`POST /v1/email-messages/{emailMessageId}` with `expectedRevisionId, subject, previewText, fromName, fromEmail, replyToEmail, emailFormat:"styled", languageCode:"en", lmx` (the assembled string), `contactPropertiesFallbacks:{firstName:"there"}`. **`lmx` field only — no HTML.** (See `loops-endpoints.md` for 409/400 handling.)
+`POST /v1/email-messages/{emailMessageId}` with `expectedRevisionId, subject, previewText, fromName, fromEmail, replyToEmail, emailFormat:"styled", lmx` (the assembled string), `contactPropertiesFallbacks:{firstName:"there"}`. **`lmx` field only — no HTML.** Do not send `languageCode`: Loops rejects it with `400 Translations are not enabled for this team` (2026-11-27). (See `loops-endpoints.md` for 409/400 handling.)
 
 ### Step 5 — Gate 1: Preview (delegate + skill STOP)
 `POST /v1/email-messages/{id}/preview { emails:[author_email], contactProperties:{firstName:author_first_name} }`. Then **STOP**.

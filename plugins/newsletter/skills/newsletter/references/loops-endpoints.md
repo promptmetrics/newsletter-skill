@@ -39,7 +39,6 @@ Use this to confirm the key is valid before doing anything else. It runs at **St
     "fromEmail": "fieldnotes",
     "replyToEmail": "...",
     "emailFormat": "styled",
-    "languageCode": "en",
     "lmx": "<assembled LMX string>",
     "contactPropertiesFallbacks": { "firstName": "there" }
   }
@@ -55,7 +54,7 @@ Use this to confirm the key is valid before doing anything else. It runs at **St
   4. **MJML/legacy message** → recreate the campaign (a fresh draft is always LMX, never MJML).
 - **413** → `lmx` payload exceeds 100KB; trim content and retry (the assembler should prevent this pre-call).
 - **422** → LMX failed to compile; fix the LMX and retry.
-- **400** → invalid body; fix and retry.
+- **400** → invalid body; fix and retry. **Never send `languageCode`**: with translations off for the team, Loops answers `400 Translations are not enabled for this team` (seen 2026-11-27), and the field is not needed for a single-language campaign.
 - **404** → `emailMessageId` not found.
 - **401** → key is invalid, OR the team Content API is not enabled (see "Content API not enabled" note below).
 
