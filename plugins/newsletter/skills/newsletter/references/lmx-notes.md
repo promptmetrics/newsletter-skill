@@ -32,13 +32,13 @@ Insert an explicit spacer between them:
 
 ## No per-block font
 There is no `fontFamily` attribute anywhere. `<Style>`/ThemeStyles exposes **`bodyFontFamily` + `bodyFontCategory` only** — one family for the entire email, no heading font and no mono font.
-- The design system is single-family (Archivo) as of 2026-08-24, so this matches.
-- **Micro-labels cannot be monospaced.** Style them with size + `textColor` + uppercase + wide tracking instead (as the site's `.pm-kicker` / `.pm-label` do).
-- Italic comes from the `<Em>` tag, not a `fontStyle` attribute.
+- ProNova sets everything in Sora (`pronova-website/src/styles/tokens.css`), so this matches.
+- **No weight and no tracking either.** There is no `fontWeight` or per-block letter-spacing attribute, so ProNova's light body (300), semibold headings (600) and `0.08em` eyebrow tracking cannot be set. Micro-labels are styled with size + `textColor`, and the assembler uppercases the string itself (no `text-transform`).
+- Italic comes from the `<Em>` tag, not a `fontStyle` attribute. The ProNova template uses no italic at all.
 
 ## Color lives on inline tags
 `<Paragraph>`, `<H1>`-`<H3>` and `<Quote>` do **not** accept `textColor` — and `color` is not a text attribute at all (it belongs to `<Divider>` and `<Icons>`).
-- Body/meta color → `<Paragraph><Text textColor="#39443f">…</Text></Paragraph>`.
+- Body/meta color → `<Paragraph><Text textColor="#2a2f37">…</Text></Paragraph>`.
 - Heading color → from the Theme (`heading1Color` …).
 - `<Text>` is an **inline** tag; it cannot be a direct child of `<Section>`.
 
@@ -51,39 +51,40 @@ LMX has no `for`/`if`. Expand arrays yourself:
 - `body_blocks[]` → concatenate the LMX fragment strings in order. Validate each fragment against the installed **Loops LMX skill**, not against this file.
 - Optional sections (hero, prompt callout) → **strip the whole block** if the variable is empty; don't emit an empty block.
 
-## No borders, no `box-shadow`
-Blocks accept only `blockColor`, `blockBorderRadius` and `padding*`. There is no block border attribute and no shadow, and both would be invisible in Gmail/Outlook/Yahoo anyway.
+## Section border yes, `box-shadow` no
+The vendored spec documents only `blockColor`, `blockBorderRadius` and `padding*` on blocks. `<Section>` also takes `blockBorderWidth` + `blockBorderColor` (undocumented upstream; confirmed in the Loops dry run of 2026-11-27, which drew the border only when both were set). There is no per-side border and no shadow.
 
-Depth comes from the **mint surface ladder** instead: an `#e9f1ee` sheet with `#d2e1db` cards tinted on it (the outer canvas reuses `#d2e1db`). Cards must be `#d2e1db`, not `#e0ebe7` — the latter is only 1.06:1 against the sheet and effectively disappears without a border. See `token-map.md`.
+A card is a `#f6f7fa` `<Section>` on the white `#ffffff` sheet (the outer canvas reuses `#f6f7fa`). That fill is only **1.07:1** against the sheet, too faint to carry a card by itself. The card reads through its 1px `#e6e9ef` border, its 6px tinted top bar, its 6px radius and its padding. Do not add a color from outside the ProNova system to strengthen it. See `token-map.md`.
 
 (`<Image>` is the exception — it does have `borderRadius`, `borderWidth` and `borderColor`.)
 
-## 3px raspberry top-bar (no `::before`)
-A `<Divider color="#b8446a" borderWidth="3"/>` as the **first child** of the card `<Section>`. The thickness attribute is `borderWidth` (1-16); there is no `thickness`. See `token-map.md` for the full card pattern.
+## 6px tinted top bar (no `::before`)
+A `<Divider color="#d6dcf8" borderWidth="6" paddingTop="0" paddingBottom="0"/>` as the **first child** of the card `<Section>`. Both paddings are `0`: a Divider carries default padding above and below, and without the zeros the bar sits about 24px below the card's top edge with a band of card fill above it (seen in the Loops render of 2026-11-27). The card itself carries `blockBorderWidth="1" blockBorderColor="#e6e9ef"`, the site's hairline: the fill `#f6f7fa` is only 1.07:1 against the white sheet, so the border is what gives the card its edge. Loops draws a Section border only when both attributes are set. The thickness attribute is `borderWidth` (1-16); there is no `thickness`. The color is one of ProNova's four topic tints: periwinkle `#d6dcf8` (default), ice `#d3ecf2`, mint `#cdebdd`, butter `#f3efc6`. See `token-map.md` for the full card pattern.
 
 ## No `@media` / no custom CSS
 `@media (prefers-color-scheme)` is **not available**. Dark mode = **survive auto-inversion**, don't control it:
+- ProNova has one light theme and no dark theme, so there are no dark values to aim for.
 - Six-digit hex only (never shorthand) — inverts predictably.
-- Cool-not-pure values (`#161c1a`, `#e9f1ee`) → the mint pair stays mint-adjacent under inversion.
-- Raspberry `#b8446a` is mid-luminance → survives both light and dark-inverted backgrounds.
-- **Button: white `#ffffff` on raspberry `#b8446a`.** Raspberry is dark enough for white (5.2:1). This reverses the old palette's dark-ink-on-button rule, which existed only because the previous orange coral was too light for white. Confirm this pair in the Gate 1 dark preview.
-- Set `<meta name="color-scheme" content="light dark">` at the Theme/document level in the Loops UI (not API-settable).
+- Ink `#15181d` on the white sheet is 17.79:1 and stays above 17:1 under a plain inversion. Muted `#5a6170` and accent `#3b4bc8` also pass when a client flips text and surface together.
+- **Partial inversion is the risk.** On a darkened sheet, a link left in `#3b4bc8` falls to 3.02:1 and a meta line left in `#5a6170` to 3.37:1. Check both in the Gate 1 dark preview.
+- **Button: white `#ffffff` on ink `#15181d`** (17.79:1). Both colors are explicit, so most clients keep the pair. If a client darkens the card and keeps the fill, the label stays readable but the button loses its outline. Confirm this pair in the Gate 1 dark preview.
+- Set `<meta name="color-scheme" content="light dark">` at the Theme/document level in the Loops UI (not API-settable). This instruction predates the ProNova palette and has not been re-tested against a light-only design; see `token-map.md`.
 
-## Italic-raspberry emphasis
-`<H1>Ship the <Em textColor="#8a2c4e">boring</Em> automation</H1>`
+## Headings carry no emphasis
+`<H1>Ship the boring automation</H1>`
 
-`textColor` is documented directly on `<Em>` (and every other inline tag), so no nesting trick is needed.
+ProNova allows no italic and no colored word inside a heading. `textColor` is documented on `<Em>` and every other inline tag, so LMX would accept one; the template does not use it. Keep `<Em>`, `<Strong>` and `textColor` out of `<H1>`-`<H3>`.
 
-## Accent rationing
-Raspberry is for **CTAs, links, the H1 emphasis word, and card top-bars**. **Teal** (`#276358` text / `#3f8f82` rules) carries the kicker and the masthead rule. Don't reach for raspberry as a general accent.
+## Accent: links and the diamond only
+Accent `#3b4bc8` is for **links and the kicker's ◆**. It is 6.93:1 on the sheet and 6.47:1 on a card, so it is safe as small text on both. The button is ink `#15181d`, the masthead rule is a 1px ink `<Divider>`, and card top bars take a topic tint. Don't reach for the accent as a general highlight.
 
-`#b8446a` is ~3.4:1 on mint — **non-text or ≥18px only**. Any raspberry that is small text must be `#8a2c4e`.
+The diamond is ProNova's only ornament: a small square rotated 45°. LMX has no transform, so the glyph ◆ (U+25C6) stands in for it, inside a `<Text textColor="#3b4bc8">`. No emoji anywhere.
 
 ## Border radius
-`blockBorderRadius="18"` on cards; `buttonBorderRadius: 999` in the Theme. Loops emits a VML `RoundRect` fallback for Outlook Classic → degrades to square gracefully. Accept the degradation.
+`blockBorderRadius="6"` on cards; `buttonBorderRadius: 6` in the Theme and `borderRadius="6"` on the `<Button>` and the hero `<Image>`. One radius, no pills. Loops emits a VML `RoundRect` fallback for Outlook Classic → degrades to square gracefully. Accept the degradation.
 
 ## Web fonts
-Archivo renders in Apple Mail / Samsung / Comcast. Gmail / Outlook / Yahoo fall back to the `bodyFontCategory` default (system-ui / Arial). Mitigation: hierarchy is carried by size, weight, tracking and color — all of which survive a fallback — plus the raspberry top-bar and teal kicker rule.
+The family is `Sora`, a bare Google Fonts name (a CSS stack breaks Loops' font request, see `token-map.md`). A web font reaches only the clients that load web fonts (Apple Mail, Samsung). Google Fonts serves Sora (checked 2026-11-27); confirm the rendered email's font link in Gate 1. Gmail / Outlook / Yahoo show Arial either way. Mitigation: hierarchy is carried by size and color, both of which survive a fallback, plus the ink masthead rule and the tinted top bars.
 
 ## Images
 `width` is a **number, 12-600 pixels** — `width="100%"` is invalid. The content column is 600px with `bodyXPadding="24"`, so a full-bleed image inside the body is `552`.

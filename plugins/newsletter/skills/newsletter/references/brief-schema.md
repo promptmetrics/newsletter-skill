@@ -1,6 +1,8 @@
 # Brief Schema — Required-Fields Contract
 
 > **This is a mirror.** The canonical schema lives in **PromptMetrics OS**. OS is the source of truth; sync on change. Do not fork the definition — copy with a pointer back.
+>
+> **Ahead of OS since v0.6.0 (2026-11-25).** The ProNova re-skin removed `emphasis_word` from this mirror and added the optional `topic` and `key_points[].topic`. The OS copy still needs both changes.
 
 The newsletter skill collects a brief from one of three sources (Notion DB in Phase 1b, freeform paste, or interview) and checks it against this contract. **Gap-collection:** ask only about what's missing. Full brief → zero questions. Partial → targeted questions. Empty → full interview.
 
@@ -10,7 +12,7 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 |---|---|---|---|
 | `target_list` | string | A Loops mailing list name or ID | Determines where the campaign sends (Gate 2) |
 | `goal` | string | 1–2 sentences | Frames the issue; drives subject, headline and lede |
-| `key_points` | array | 3–5 items, each `{title, description, link_url?, link_label?}` | The card stack (template §8); 3 default, 5 max (LMX has no loop) |
+| `key_points` | array | 3–5 items, each `{title, description, link_url?, link_label?, topic?}` | The card stack (template §8); 3 default, 5 max (LMX has no loop). `topic` is optional and sets that card's top-bar tint (see `topic` below) |
 | `tone` | object | `{voice, must_avoid[]}` e.g. `{voice:"editorial", must_avoid:["jargon","hype"]}` | Guards brand voice; `must_avoid` is cross-referenced by the spam scan |
 | `issue_metadata` | object | `{issue_number, author, date}` | Populates masthead, byline, sign-off |
 
@@ -21,8 +23,8 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 | `cta` | object | `{label?, url?, headline?, supporting?}` — **§11 is a standing Operator Stack community card** (`https://operator.promptmetrics.dev/`, "Join Operator Stack"). Supply this only to override that destination. **Never point it at a newsletter signup** — the reader is already subscribed, so that button is dead |
 | `subject` | string | If absent, skill drafts from `goal` + `key_points[0]`; approved at Gate 1 |
 | `preview_text` | string | If absent, skill drafts; 40–90 chars, sentence case, no emoji |
-| `headline` | string | If absent, skill drafts from `goal`; split around `emphasis_word` |
-| `emphasis_word` | string | The single italic-coral word in the H1 |
+| `headline` | string | If absent, skill drafts from `goal`. Plain text: the H1 carries no italic and no colored word |
+| `topic` | string | One of `agents`, `engineering`, `mcp`, `workflows`. Picks the tint of every card's 6px top bar: periwinkle `#d6dcf8`, ice `#d3ecf2`, mint `#cdebdd`, butter `#f3efc6`. If absent, periwinkle. A key point's own `topic` overrides it for that card |
 | `lede` | string | If absent, skill drafts from `goal` |
 | `read_time` | number | If absent, skill estimates from body length |
 | `hero_image_url` | string | If absent, template §7 omitted. **Must be a Loops-CDN URL** from the 3-step upload flow — an external/pasted URL fails LMX validation with 422 |
@@ -31,14 +33,14 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
 | `cta_headline` | string | If absent, uses the standing Operator Stack headline (see `lmx-master-template.md`) |
 | `cta_supporting` | string | If absent, uses the standing Operator Stack supporting line |
 | `body_blocks` | array | LMX fragment strings (`<Paragraph>`/`<H2>`/`<UnorderedList>`/`<Quote>`); the editorial core |
-| `prompt_quote` | string | The italic callout (template §10); if absent, §10 omitted |
+| `prompt_quote` | string | The pull-quote callout (template §10), set in plain ink; if absent, §10 omitted |
 | `prompt_attribution` | string | If absent, omitted |
-| `kicker` | string | Mono uppercase label above headline |
+| `kicker` | string | Uppercase muted label above the headline, led by an accent ◆ |
 | `masthead_label` | string | Default `"FIELD NOTES"` |
-| `from_name` | string | Default from Loops/campaign config |
+| `from_name` | string | Default from Loops/campaign config, e.g. `ProNova Field Notes` |
 | `from_email` | string | Default from Loops/campaign config |
 | `reply_to_email` | string | Default = `from_email` |
-| `company` | string | Sign-off line |
+| `company` | string | Sign-off line. Default `ProNova` (capital N). Where the full company line is wanted: `ProNova AI Labs UG, Berlin` |
 | `website_url` | string | Used in sign-off / "read full issue" link |
 
 ## Gap-collection behavior
@@ -66,10 +68,10 @@ The newsletter skill collects a brief from one of three sources (Notion DB in Ph
   "subject": "Why your eval rubric is already stale",
   "preview_text": "Three patterns from a month of shipping prompt evaluations.",
   "headline": "Your eval rubric is already stale",
-  "emphasis_word": "stale",
+  "topic": "engineering",
   "lede": "We shipped 40 prompt evaluations this month. Three patterns showed up in almost all of them.",
   "read_time": 6,
-  "company": "PromptMetrics",
-  "website_url": "https://promptmetrics.com"
+  "company": "ProNova",
+  "website_url": "https://pronovahq.com"
 }
 ```

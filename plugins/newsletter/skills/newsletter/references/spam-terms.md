@@ -45,6 +45,16 @@ cash bonus
 double your
 no investment
 
+## house (ProNova copy rules; `game-changer` is already listed under hype)
+unlock
+unleash
+elevate
+revolutionize
+supercharge
+
+## house-patterns (structural, not literal terms — flag if detected in subject, preview or body)
+EMOJI (any emoji character; the ◆ in the kicker is a text glyph, not an emoji)
+
 ## subject-patterns (structural, not literal terms — flag if detected)
 ALL CAPS SUBJECT (subject line is ≥60% uppercase letters)
 EXCESSIVE PUNCTUATION (subject line has ≥3 exclamation marks or ≥2 consecutive !!!)

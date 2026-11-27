@@ -2,6 +2,8 @@
 
 > **⚠️ SUPERSEDED IN PART (2026-08-31).** The palette, font stacks and dark-mode rules in this document describe the retired warm-"Paper" design system (`#f4efe7` / `#d97757` / Fraunces + Inter + JetBrains Mono). The current design system is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue, and **one font family (Archivo)** — defined in `pm-website/app/styles/v3-tokens.css`.
 >
+> **Superseded again (2026-11-25).** "Sea Glass" is retired too. The newsletter now wears the **ProNova** design system — white sheet, ink text, one accent, **one font family (Sora)** — defined in `pronova-website/src/styles/tokens.css`, and the Loops Theme is named "ProNova". Every "PromptMetrics Sea Glass" below is history.
+>
 > For anything token-, color-, font- or template-structure related, **`skills/newsletter/references/token-map.md` and `lmx-master-template.md` are authoritative**, not this file. Two specific claims here are now wrong: Themes are **writable** via the API (`POST /v1/themes`, `POST /v1/themes/{themeId}`), and `themeId="promptmetrics-paper"` is not a real handle. The API-capability findings and the verification procedure remain useful.
 
 
