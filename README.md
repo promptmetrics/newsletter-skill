@@ -2,7 +2,7 @@
 
 A Claude Code skill that turns a newsletter brief into a Loops.so email — **assembled as LMX, not HTML** — previews it to the author, runs pre-send safety checks, and sends to a Loops mailing list after **two human approval gates**. It never auto-fires. Thin layer on top of Loops' shipped agent skills (API / LMX / CLI / email).
 
-**Status:** Phase 1a (v0.5.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
+**Status:** Phase 1a (v0.6.0) — interview → brief → LMX → preview → send. No Notion dependency. Phase 1b (Notion brief backbone) and Phase 2 (Cowork wrapper) are planned.
 
 ## Install
 
@@ -55,17 +55,19 @@ A cross-marketplace plugin `dependencies` declaration (`allowCrossMarketplaceDep
 
 The skill checks for these at Step 0 and will stop if missing.
 
-1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"PromptMetrics Field Notes"`, fromEmail `fieldnotes@<verified-domain>`. (Note: the `fromEmail` configured here is the **full sending address** in the Loops UI. It is a **separate concept** from the `fromEmail` field the skill sends in `POST /v1/email-messages/{id}` — that API field is **username only** (e.g. `fieldnotes`, no `@`, no domain); Loops appends the verified sending domain automatically. Keep the UI value and the API value in sync: same username, domain lives only in the UI.)
-2. **Create the "PromptMetrics Sea Glass" Theme** — Loops UI → Themes → New. The theme can now also be **auto-created via the API** (`POST /v1/themes`, writable) during onboarding, falling back to manual UI creation if the API call fails. The manual values below are the **fallback spec** (also useful for reference / auditing the API-created theme). Set:
-   - Canvas background `#d2e1db`, email sheet `#e9f1ee`, text base `#161c1a`, link color `#8a2c4e`
-   - Button background `#b8446a` (raspberry), button text `#ffffff`, button radius `999`
-   - Divider + border color `#cddcd6`, card radius `18`, body padding `24`
-   - Font: **one family** — `Archivo, system-ui, Arial, sans-serif`, category `sans-serif`. There is no heading font or mono font field in Loops.
-   - Heading sizes: H1 32 / H2 24 / H3 20 / body 16
+1. **Sending domain + `fromName` / `fromEmail`** — Loops Settings → Domains. `POST /v1/campaigns` **400s** if these aren't configured. e.g. fromName `"ProNova Field Notes"`, fromEmail `fieldnotes@<verified-domain>`. (Note: the `fromEmail` configured here is the **full sending address** in the Loops UI. It is a **separate concept** from the `fromEmail` field the skill sends in `POST /v1/email-messages/{id}` — that API field is **username only** (e.g. `fieldnotes`, no `@`, no domain); Loops appends the verified sending domain automatically. Keep the UI value and the API value in sync: same username, domain lives only in the UI.)
+2. **Create the "ProNova" Theme** — Loops UI → Themes → New. The theme can now also be **auto-created via the API** (`POST /v1/themes`, writable) during onboarding, falling back to manual UI creation if the API call fails. The manual values below are the **fallback spec** (also useful for reference / auditing the API-created theme). Set:
+   - Canvas background `#f6f7fa`, email sheet `#ffffff`, text base `#15181d`, link color `#3b4bc8`
+   - Button background `#15181d` (ink), button text `#ffffff`, button radius `6`, button padding `32` horizontal / `13` vertical
+   - Divider + border color `#e6e9ef`, divider and border width `1`, card radius `6`, body padding `24`, canvas vertical padding `24`
+   - Font: **one family** — `Sora` (the bare Google Fonts name, not a CSS stack), category `sans-serif`. There is no heading font or mono font field in Loops.
+   - Heading colors: H1, H2 and H3 all `#15181d`
+   - Heading sizes: H1 34 / H2 28 / H3 22 / body 16
+   - Line heights: H1 118 / H2 124 / H3 130 / body 165 (percent)
    - Document-level `<meta name="color-scheme" content="light dark">`
 
-   Palette is **"Sea Glass"** — mint surfaces, raspberry accent, teal ambient hue — from `pm-website/app/styles/v3-tokens.css`. Full mapping and the exact API body: `plugins/newsletter/skills/newsletter/references/token-map.md`.
-3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **dark-mode-safe variant** (reverse pinwheel in a fixed-color chip). Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
+   These are the **ProNova design system** tokens, from `pronova-website/src/styles/tokens.css`. The four topic tints for card top bars (`#d6dcf8`, `#d3ecf2`, `#cdebdd`, `#f3efc6`) are not Theme values; the skill inlines them per card. Full mapping, contrast ratios and the exact API body: `plugins/newsletter/skills/newsletter/references/token-map.md`.
+3. **Upload the logo** — via the Loops API skill's 3-step upload flow (`POST /v1/uploads` → `PUT` to the presigned URL → `POST /v1/uploads/{id}/complete`) or Loops UI → Uploads. Use the **ProNova logo tile and wordmark**, dark ink on a light ground, exported on an opaque white ground (not transparent) so it survives a darkened sheet. Put the returned Loops-hosted URL into the brief's `hero_logo_url` field (the skill checks for it at Step 0 and stops if missing).
 4. **Confirm mailing list(s)** — Loops UI → Lists. Note the list name(s) the skill will offer at Gate 2. (`GET /v1/lists` returns names but the API gives **no contact count** — the skill shows names only and asks you to verify counts in the UI.)
 5. **Enter the Loops API key** — onboarding stores it in your OS keychain (macOS Keychain via `security`; Linux `secret-tool`/libsecret with a `pass` fallback), never in a plaintext file. In your terminal (or via the `!` prefix in Claude Code):
    ```
@@ -89,7 +91,7 @@ The current user is resolved from `NEWSLETTER_SENDER` env → git `user.email` �
 
 1. **Collect brief** — interview (default), freeform paste, or Notion DB (1b). Gap-collect against the 5 required fields (`references/brief-schema.md`).
 2. **Create draft campaign** — `POST /v1/campaigns`.
-3. **Assemble LMX** — fill the 12-section master template (`references/lmx-master-template.md`) against the Paper token map (`references/token-map.md`); expand `key_points[]`/`body_blocks[]`; enforce the 100KB cap.
+3. **Assemble LMX** — fill the 12-section master template (`references/lmx-master-template.md`) against the ProNova token map (`references/token-map.md`); expand `key_points[]`/`body_blocks[]`; enforce the 100KB cap.
 4. **Set email content** — `POST /v1/email-messages/{id}` with the `lmx` payload only.
 5. **Gate 1 — preview** — send to the author; **STOP** for approval (check Apple Mail + Gmail, light + dark).
 6. **Pre-send checks** — Loops Guardian + the skill's own spam scan (`references/spam-terms.md`) + live broken-link check.
@@ -118,7 +120,7 @@ Still **your call** (account/team config, not code):
 - **SEND** Who's on the allowlist (`references/senders.md`).
 - **D2** Which mailing list(s) + any "engaged" segment (Loops UI).
 - **D4** Logo variant for dark mode.
-- **D9** Hero art direction (cream-backed 1.91:1 pinwheel motif vs. author-supplied per issue).
+- **D9** Hero art direction (a ProNova house image at 1.91:1 vs. author-supplied per issue).
 
 ## Repo layout
 
@@ -142,7 +144,7 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 ## Phasing
 
-- **Phase 1a (v0.5.0)** — this release. Interview → brief → LMX → preview → send.
+- **Phase 1a (v0.6.0)** — this release. Interview → brief → LMX → preview → send.
 - **Phase 1b (v0.2)** — Notion brief-DB read + gap-collection + Theme guide (`references/notion-brief-query.md`, `references/theme-setup-guide.md`).
 - **Phase 2 (v0.3)** — Cowork wrapper so non-coders can run it.
 
@@ -150,8 +152,9 @@ NOTICE  LICENSE  .env.example  .gitignore  README.md
 
 - The skill sends **campaigns** (one-to-many), not transactional email. `{contact.firstName}` is the only personalization channel.
 - Loops auto-appends the campaign footer + unsubscribe link — the template does **not** author one.
-- Archivo renders only in Apple Mail/Samsung/Comcast; Gmail/Outlook/Yahoo fall back to system-ui/Arial. Hierarchy is carried by size, weight, tracking and color — all of which survive the fallback — plus the raspberry top-bar and teal kicker rule.
-- Dark mode is **survived, not controlled** (no `@media` in LMX): warm-not-pure hex, coral-ink button text, mid-tone logo.
+- The email wears the ProNova design system: white sheet, ink text, accent `#3b4bc8` on links and the kicker's ◆ only, one 6px radius, Sora with an Arial fallback. LMX cannot set font weight, letter-spacing or `text-transform`, so ProNova's light body, semibold tight-tracked headings and tracked eyebrows are not reproduced; `references/token-map.md` lists each gap.
+- Sora reaches only the clients that load web fonts, and only if Loops serves it (unverified); Gmail/Outlook/Yahoo show Arial. Hierarchy is carried by size and color, which survive the fallback, plus the ink masthead rule and the tinted card top bars.
+- Dark mode is **survived, not controlled** (no `@media` in LMX, and ProNova has no dark theme): ink-and-white button with both colors explicit, logo on an opaque light ground.
 
 ---
 

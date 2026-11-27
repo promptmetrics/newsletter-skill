@@ -48,13 +48,15 @@ Why **not** `~/.zshenv`: it runs on **every** zsh, including non-interactive scr
 - **The skill never runs `loops-key.sh get` at runtime, and never emits `LOOPS_API_KEY="$(.../loops-key.sh get)"` inline.** `get` is a manual escape hatch only (for the user to run in their own terminal, piped into an env var). The key enters the environment solely via the keychain-read line `install-line` writes, which runs at shell startup outside any Claude session.
 - The skill itself only ever calls `status` (boolean) in-session. It never reads the key into the conversation.
 
-## 2. Design system / template — the "PromptMetrics Sea Glass" Theme
+## 2. Design system / template — the "ProNova" Theme
 
-The Theme is created/verified **via the Loops API** (Themes are writable in OpenAPI v1.19.0: `POST /v1/themes` and `POST /v1/themes/{themeId}`). The Loops UI path remains a **fallback** when the API path fails. Canonical token values live in `references/token-map.md`.
+The Theme is created/verified **via the Loops API** (Themes are writable in OpenAPI v1.19.0: `POST /v1/themes` and `POST /v1/themes/{themeId}`). The Loops UI path remains a **fallback** when the API path fails. Canonical token values live in `references/token-map.md`, which takes them from the ProNova design system (`pronova-website/src/styles/tokens.css`).
+
+**Upgrading from v0.5.x.** The skill no longer looks for the "PromptMetrics Sea Glass" Theme and never modifies or deletes it. The first run after the upgrade finds no Theme named "ProNova" and creates one in 2c. The old Theme stays in the Loops account until someone removes it there by hand.
 
 ### 2a. Look for an existing Theme — `GET /v1/themes`
 
-`GET /v1/themes` is **paginated**: it returns `{ pagination, data: [...] }` where `data[].id` is an **opaque** value (e.g. `cm_...`), not a slug. Paginate with `perPage` (10–50) and `pagination.nextCursor` — loop pages until a Theme with `name == "PromptMetrics Sea Glass"` is found **or** pages are exhausted. Only after exhausting pages may you conclude the Theme is missing.
+`GET /v1/themes` is **paginated**: it returns `{ pagination, data: [...] }` where `data[].id` is an **opaque** value (e.g. `cm_...`), not a slug. Paginate with `perPage` (10–50) and `pagination.nextCursor` — loop pages until a Theme with `name == "ProNova"` is found **or** pages are exhausted. Only after exhausting pages may you conclude the Theme is missing.
 
 ```http
 GET /v1/themes?perPage=50
@@ -73,57 +75,71 @@ Store the matched Theme's `data[].id` (the opaque `cm_...` value). This id is us
 
 ### 2c. If missing — create it via `POST /v1/themes`
 
-`POST /v1/themes` with the Paper token values from `token-map.md` (name `"PromptMetrics Sea Glass"` + the `ThemeStyles` keys, which match the LMX `<Style />` attribute names):
+`POST /v1/themes` with the ProNova token values from `token-map.md` (name `"ProNova"` + the `ThemeStyles` keys, which match the LMX `<Style />` attribute names):
 
 | ThemeStyles key | Value |
 |---|---|
-| `backgroundColor` | `#d2e1db` (outer canvas) |
-| `bodyColor` | `#e9f1ee` (email sheet) |
-| `textBaseColor` | `#161c1a` |
-| `textLinkColor` | `#8a2c4e` |
-| `buttonBodyColor` | `#b8446a` |
-| `buttonTextColor` | `#ffffff` |
-| `buttonBorderRadius` | `999` |
-| `dividerColor` | `#cddcd6` |
-| `borderColor` | `#cddcd6` |
-| `borderRadius` | `18` |
+| `backgroundColor` | `#f6f7fa` (outer canvas) |
+| `backgroundYPadding` | `24` |
+| `bodyColor` | `#ffffff` (email sheet) |
 | `bodyXPadding` | `24` |
 | `bodyYPadding` | `24` |
-| `bodyFontFamily` | `Archivo, system-ui, Arial, sans-serif` |
+| `bodyFontFamily` | `Sora` |
 | `bodyFontCategory` | `sans-serif` |
-| `heading1/2/3FontSize` | 32 / 24 / 20 |
-| `textBaseFontSize` | 16 |
-| Document meta | `color-scheme: light dark` |
+| `borderColor` | `#e6e9ef` |
+| `borderWidth` | `1` |
+| `borderRadius` | `6` |
+| `textBaseColor` | `#15181d` |
+| `textBaseFontSize` | `16` |
+| `textBaseLineHeight` | `165` |
+| `textLinkColor` | `#3b4bc8` |
+| `buttonBodyColor` | `#15181d` |
+| `buttonTextColor` | `#ffffff` |
+| `buttonBorderRadius` | `6` |
+| `buttonBodyXPadding` | `32` |
+| `buttonBodyYPadding` | `13` |
+| `dividerColor` | `#e6e9ef` |
+| `dividerBorderWidth` | `1` |
+| `heading1/2/3Color` | `#15181d` |
+| `heading1/2/3FontSize` | 34 / 28 / 22 |
+| `heading1/2/3LineHeight` | 118 / 124 / 130 |
+| Document meta (Loops UI only, not an API key) | `color-scheme: light dark` |
 
-**One font family only.** ThemeStyles has no `headingFontFamily` and no `monoFontFamily` — `bodyFontFamily` sets the whole email. Do not send `h1FontSize` or `bodyFontSize` either; the real keys are `heading1FontSize` and `textBaseFontSize`. The full body, with every key verified against the schema, is in `token-map.md`.
+**One font family only.** ThemeStyles has no `headingFontFamily` and no `monoFontFamily` — `bodyFontFamily` sets the whole email. Do not send `h1FontSize` or `bodyFontSize` either; the real keys are `heading1FontSize` and `textBaseFontSize`. The table above lists every key in the body; the body itself, as JSON, is in `token-map.md`. The two must match value for value.
+
+**What the Theme cannot hold.** ProNova sets body copy at weight 300 and headings at 600 with tight tracking. `ThemeStyles` has no weight key, and the unit of `heading*LetterSpacing` is undocumented, so the Theme sets neither. The four topic tints (`#d6dcf8`, `#d3ecf2`, `#cdebdd`, `#f3efc6`) are not Theme values either: the assembler inlines them on each card's top bar (`token-map.md`).
 
 Note: ThemeStyles has **`bodyXPadding` / `bodyYPadding`** (and `backgroundXPadding` / `backgroundYPadding`) — there is no `bodyPadding` key. On success (`201`) capture the returned Theme `id` (feeds M2). A `401` here with an otherwise-valid key means the team's **Content API is not enabled** (distinct from the Step 0 `GET /v1/api-key` 401) — point the user to Loops Settings to enable it.
 
 ### 2d. Fallback — Loops UI
 
-If `POST /v1/themes` returns `400` / `403` / `401` (or the team has not enabled the Content API), fall back to the **manual** path: Loops UI → Themes → New, name **"PromptMetrics Sea Glass"**, with the exact values in the table in 2c (plus the manual `Body padding: 24` mapping used by the UI). After the user creates it, **re-run 2a** — `GET /v1/themes` again, paginate, and capture the new Theme's `id` so M2 is satisfied either way.
+If `POST /v1/themes` returns `400` / `403` / `401` (or the team has not enabled the Content API), fall back to the **manual** path: Loops UI → Themes → New, name **"ProNova"**, with the exact values in the table in 2c (plus the manual `Body padding: 24` mapping used by the UI). After the user creates it, **re-run 2a** — `GET /v1/themes` again, paginate, and capture the new Theme's `id` so M2 is satisfied either way.
 
-**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "PromptMetrics Sea Glass"`, and its `id` is captured for use by `POST /v1/themes/{id}` and as a `<Style themeId>` candidate.
+**Verify**: `GET /v1/themes` (via the Loops API skill) returns a Theme with `name == "ProNova"`, and its `id` is captured for use by `POST /v1/themes/{id}` and as a `<Style themeId>` candidate.
 
 ## 3. From address — sending domain + fromName / fromEmail
 
 Two **distinct** from-address concepts:
 
-- **Sending address (Loops UI only)** — Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"PromptMetrics Field Notes"`) and the full sending address `fieldnotes@<verified-domain>`. This is configured in the UI, never via the API.
+- **Sending address (Loops UI only)** — Loops Settings → Domains: verify the sending domain, set `fromName` (e.g. `"ProNova Field Notes"`) and the full sending address `fieldnotes@<verified-domain>`. This is configured in the UI, never via the API.
 - **API `fromEmail` (Step 4, `POST /v1/email-messages`)** — **USERNAME ONLY, no `@`, no domain.** For example `"fieldnotes"`, not `"fieldnotes@<verified-domain>"`. Loops appends the verified sending domain automatically; sending a full `user@domain` here is an error.
 
 `POST /v1/campaigns` **400s** if the sending domain or `fromName`/`fromEmail` aren't configured in the UI. Onboarding guides the user through Loops Settings → Domains to set both before any API send.
+
+Loops appends the campaign footer, and the template authors none. Whatever company details that footer shows come from the Loops account settings, not from this repo. Where a company line is shown, it reads `ProNova AI Labs UG, Berlin`.
 
 **Verify**: a dry `POST /v1/campaigns { name:"onboarding-check" }` returns a campaign (not 400). A 400 → domain/from unconfigured; loop back. Delete the throwaway campaign afterward.
 
 ## 4. Logo — hero_logo_url
 
-One-time logo upload (Loops API skill) of the **dark-mode-safe** variant (reverse pinwheel in a fixed-color chip). Uploads are a **3-step flow** against base `https://app.loops.so/api`:
+One-time logo upload (Loops API skill) of the **ProNova logo tile and wordmark**: dark ink on a light ground. Export it on an **opaque white ground**, not a transparent one, so the ink wordmark keeps its ground if a client darkens the sheet. The template renders it 120px wide (`lmx-master-template.md`). This skill does not create the image file; upload the one the brand already has. Uploads are a **3-step flow** against base `https://app.loops.so/api`:
 
 1. `POST /v1/uploads` → returns a `presignedUrl` and an upload `id`.
 2. `PUT` the logo file bytes to the `presignedUrl`.
 3. `POST /v1/uploads/{id}/complete` → returns the public hosted URL.
 
 Store that URL as `hero_logo_url` (in the brief or project config). Step 0 fail-stops if absent.
+
+**Current asset (uploaded 2026-11-27):** `https://images.vialoops.com/cmqdtcbc82mqp0jxso24o1qbf/cmwyzm0by3odo0k068suw14bt.png` — the ProNova tile and wordmark on a white ground, 528 × 136 px (3.88:1), drawn from the site's `Logo.astro` at four times its size. At the template's `width="120"` it is about 31px tall. It rendered correctly in the Loops dry run of that day at 760 and 390 px wide.
 
 **Verify**: the returned URL is a non-empty `https://...` string the user records for use in briefs.

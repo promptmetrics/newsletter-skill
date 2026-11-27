@@ -25,7 +25,7 @@ Three checks run in Step 6, after Gate 1 approval, before the list-confirm + Gat
 ## 6b. Spam-trigger-word scan (skill does this)
 
 - **Input:** assembled `subject` + `previewText` + body text (LMX tags stripped, text nodes concatenated).
-- **Process:** lowercase, match against `references/spam-terms.md` (read at scan time), also match the brief's `tone.must_avoid[]`.
+- **Process:** lowercase, match against `references/spam-terms.md` (read at scan time; its `house` sections hold the ProNova copy rules: the words the brand never uses, and no emoji), also match the brief's `tone.must_avoid[]`.
 - **Output:** flagged terms with category + ±20-char context + location (subject / preview / body). `must_avoid` hits flagged with higher salience.
 - **Severity:** **advisory.** Context-dependent ("free" in "free trade" is not spam). Author acknowledges or revises. Not a hard block.
 

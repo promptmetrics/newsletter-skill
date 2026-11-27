@@ -14,7 +14,7 @@ when_to_use: |
 
 # PromptMetrics Newsletter Skill
 
-Generates a "Field Notes" issue in Loops.so from a brief. **LMX, not HTML.** Thin layer over the installed Loops skills (API / LMX / CLI / email) — delegate REST calls to the Loops API skill; this skill owns the opinionated workflow, the brand→LMX translation, the two human gates, the gap-fillers, and the never-auto-fire discipline.
+Generates a "Field Notes" issue in Loops.so from a brief, styled in the ProNova design system. **LMX, not HTML.** Thin layer over the installed Loops skills (API / LMX / CLI / email) — delegate REST calls to the Loops API skill; this skill owns the opinionated workflow, the brand→LMX translation, the two human gates, the gap-fillers, and the never-auto-fire discipline.
 
 ## When this skill activates
 
@@ -30,7 +30,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 - `references/brief-schema.md` — required-fields contract (Step 1 gap-collection)
 - `references/lmx-master-template.md` — 12-section LMX skeleton + expansion rules (Step 3)
-- `references/token-map.md` — Paper tokens → LMX hex/attrs (Step 3)
+- `references/token-map.md` — ProNova tokens → LMX hex/attrs (Step 3)
 - `references/loops-endpoints.md` — exact endpoints + field contracts (Steps 0,2,4,5,6,7,9)
 - `references/guardian-checklist.md` — Guardian scope + gap-fillers (Step 6)
 - `references/spam-terms.md` — spam-trigger term list (Step 6b)
@@ -44,7 +44,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
 **First run, or any missing prerequisite → run onboarding** (`references/onboarding.md`). Onboarding walks the user through, and verifies, in order:
 1. **Loops API key** — entered by the user (silently, on the TTY) and stored in the OS keychain via `${CLAUDE_SKILL_DIR}/scripts/loops-key.sh`. The skill **never** reads the key from disk, logs, or echoes it — it only checks presence (`loops-key.sh status`). Onboarding runs `loops-key.sh install-line` (after confirmation), which writes a guarded keychain-read `export` line to **both `~/.zprofile` and `~/.zshrc`**, and tells the user to **restart their shell**; it does **not** validate in-session (the key is not in env until the restart). Validation runs at Step 0 below on the next run.
-2. **Design system / template** — the "PromptMetrics Sea Glass" Theme, created-or-verified via the API (not manual-only): `GET /v1/themes` (paginated; page with `perPage` + `nextCursor` until found). If a theme with `name=="PromptMetrics Sea Glass"` exists, capture its `id`. If missing, `POST /v1/themes` with the Paper token values (`references/token-map.md`) and capture the returned `id`. The manual Loops UI path (Themes → New theme) is the **fallback** if the API path fails (e.g. Content API not enabled).
+2. **Design system / template** — the "ProNova" Theme, created-or-verified via the API (not manual-only): `GET /v1/themes` (paginated; page with `perPage` + `nextCursor` until found). If a theme with `name=="ProNova"` exists, capture its `id`. If missing, `POST /v1/themes` with the ProNova token values (`references/token-map.md`) and capture the returned `id`. The manual Loops UI path (Themes → New theme) is the **fallback** if the API path fails (e.g. Content API not enabled).
 3. **From address** — sending domain + `fromName`/`fromEmail` configured in Loops Settings → Domains, verified by a dry `POST /v1/campaigns` that does **not** 400.
 4. **Logo** — `hero_logo_url` from a one-time `POST /v1/uploads` (3-step: create → PUT to presigned URL → complete).
 
@@ -57,7 +57,7 @@ The user wants to send/draft a newsletter, build a "Field Notes" issue, or send 
 
    > **Forbidden pattern.** Never emit `LOOPS_API_KEY="$(.../loops-key.sh get)" ...` inline at runtime. The auto-mode classifier blocks keychain-secret extraction, and it exposes the key in the transcript. The key enters env only via the guarded keychain-read line that `loops-key.sh install-line` writes to `~/.zprofile` and `~/.zshrc` at shell startup. (`install-line` itself is allowed — it writes a **static** read command, not the key value, so it is not `get` and does not trip the classifier.)
 2. Loops skills bundled with this plugin (`loops-api`, `loops-lmx`, `loops-cli`, `loops-email-sending-best-practices`). These ship inside the plugin — no separate install step. Missing → the plugin install is broken; reinstall with `/plugin install promptmetrics-newsletter@promptmetrics` then `/reload-plugins`. (Maintainers sync them from upstream via `scripts/sync-loops-skills.sh`; users never need to.)
-3. "PromptMetrics Sea Glass" Theme exists and its `id` captured: `GET /v1/themes` (paginated — follow `pagination.nextCursor` with `perPage` up to 50) → find `data[].id` where `name=="PromptMetrics Sea Glass"`. Store as `{{theme_id}}` for Step 3.4. Missing → onboarding step 2 (which will `POST /v1/themes` to create it and capture the new `id`).
+3. "ProNova" Theme exists and its `id` captured: `GET /v1/themes` (paginated — follow `pagination.nextCursor` with `perPage` up to 50) → find `data[].id` where `name=="ProNova"`. Store as `{{theme_id}}` for Step 3.4. Missing → onboarding step 2 (which will `POST /v1/themes` to create it and capture the new `id`).
 4. `hero_logo_url` known. Missing → onboarding step 4.
 
 No key, no Theme, no logo → no run. Onboarding is idempotent — re-run only what's missing.
@@ -70,7 +70,9 @@ Input modes, in priority order:
 
 Whatever the source, check the brief against the required-fields contract and **gap-collect**: ask only about what's missing. Full brief → zero questions. Partial → targeted questions. Empty → full interview (walk the 5 required fields, then offer optional fields). Output: a complete brief object with all required fields populated.
 
-If optional fields are absent, draft them: `subject` / `preview_text` / `headline` / `emphasis_word` / `lede` from `goal` + `key_points[0]`; `read_time` from body length; **do not draft CTA copy** — §11 is the standing Operator Stack community card (`https://operator.promptmetrics.dev/`, "Join Operator Stack"); use its fixed defaults from `references/lmx-master-template.md` unless the brief explicitly overrides them, and never point it at a newsletter signup (the reader is already subscribed). These are approved at Gate 1. Split `headline` at `emphasis_word` into `headline_before_em` / `emphasis_word` / `headline_after_em` (exactly one emphasis word).
+If optional fields are absent, draft them: `subject` / `preview_text` / `headline` / `lede` from `goal` + `key_points[0]`; `read_time` from body length; **do not draft CTA copy** — §11 is the standing Operator Stack community card (`https://operator.promptmetrics.dev/`, "Join Operator Stack"); use its fixed defaults from `references/lmx-master-template.md` unless the brief explicitly overrides them, and never point it at a newsletter signup (the reader is already subscribed). These are approved at Gate 1.
+
+Drafted copy follows the ProNova copy rules: US English, active voice, no emoji, and none of "unlock", "unleash", "elevate", "game-changer", "revolutionize", "supercharge". The `headline` is plain text with no emphasis word: the H1 carries no italic and no colored word. If the brief names a `topic` (`agents`, `engineering`, `mcp`, `workflows`), it picks the tint of the card top bars; do not ask for one, the default is periwinkle.
 
 ### Step 2 — Create draft campaign (delegate → Loops API skill)
 `POST /v1/campaigns { name, mailingListId? }` (see `loops-endpoints.md`).
@@ -83,10 +85,10 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 1. Build the variable map from the brief (see the template's "Variable slots" table).
 2. Expand `key_points[]`: for each element, emit the §8 card `<Section>` block with `{kp_number (zero-padded), kp_title, kp_description, kp_link_url?, kp_link_label?}`. **Default 3 cards, max 5.** Fewer than 3 → ask the author whether to pad or ship fewer (don't silently pad). More than 5 → truncate to first 5 and warn. Include the `<Text><Link>` line **only if** `link_url` is non-empty.
 3. Expand `body_blocks[]`: validate each fragment (PascalCase tag, properly closed) — reject and ask the author to fix if invalid — then concatenate in array order inside the §9 `<Section>`.
-4. Inject `<Style themeId="{{theme_id}}" backgroundColor="#d2e1db" bodyColor="#e9f1ee" bodyXPadding="24" bodyYPadding="24"/>` as the **first line**, where `{{theme_id}}` is the id captured in Step 0 (`GET /v1/themes` → `data[].id` where `name=="PromptMetrics Sea Glass"`). Pass the **opaque `data[].id`** — the theme *name* is rejected with `422 <Style> references unknown themeId` (verified 2026-08-31).
+4. Inject `<Style themeId="{{theme_id}}" backgroundColor="#f6f7fa" bodyColor="#ffffff" bodyXPadding="24" bodyYPadding="24"/>` as the **first line**, where `{{theme_id}}` is the id captured in Step 0 (`GET /v1/themes` → `data[].id` where `name=="ProNova"`). Pass the **opaque `data[].id`** — the theme *name* is rejected with `422 <Style> references unknown themeId` (verified 2026-08-31).
 5. Strip optional blocks: §7 (hero) if `hero_image_url` empty; §10 (callout) if `prompt_quote` empty; the attribution `<Paragraph>` if `prompt_attribution` empty.
-6. Emit the italic-raspberry emphasis as `<H1>…<Em textColor="#8a2c4e">{{emphasis_word}}</Em>…</H1>`. `textColor` is documented directly on `<Em>` — do not nest a `<Text>` inside it.
-7. Emit the 3px raspberry top-bar as `<Divider color="#b8446a" borderWidth="3"/>` — the first child inside each card `<Section>`. **Sections cannot nest**, so each card is one flat `<Section>` with `paddingLeft="0" paddingRight="0"` (so the divider runs edge-to-edge) and every inner block insetting itself with `paddingLeft="20" paddingRight="20"`. The thickness attribute is `borderWidth`, not `thickness`; padding is four numeric attributes, never a shorthand string. `bodyPadding` is **not** a valid `<Style>`/ThemeStyles attribute; always use the X/Y pair.
+6. Emit the headline as a plain `<H1>{{headline}}</H1>`: no `<Em>`, no `<Strong>` and no `textColor` inside it, and its ink color comes from the Theme. Emit the kicker above it as `<Paragraph fontSize="12" paddingBottom="8"><Text textColor="#3b4bc8">◆</Text><Text textColor="#5a6170"> {{kicker}}</Text></Paragraph>`, uppercasing the label yourself (LMX has no `text-transform`).
+7. Emit the 6px tinted top bar as `<Divider color="#d6dcf8" borderWidth="6" paddingTop="0" paddingBottom="0"/>` — the first child inside each card `<Section>`. The color is periwinkle `#d6dcf8` unless the brief's `topic`, or that key point's own `topic`, names another tint: `engineering` → `#d3ecf2`, `mcp` → `#cdebdd`, `workflows` → `#f3efc6`. Always emit the literal hex. Each card `<Section>` also carries `blockBorderWidth="1" blockBorderColor="#e6e9ef"` (both, or Loops draws no border). **Sections cannot nest**, so each card is one flat `<Section>` with `paddingLeft="0" paddingRight="0"` (so the divider runs edge-to-edge) and every inner block insetting itself with `paddingLeft="20" paddingRight="20"`. The thickness attribute is `borderWidth`, not `thickness`; padding is four numeric attributes, never a shorthand string. `bodyPadding` is **not** a valid `<Style>`/ThemeStyles attribute; always use the X/Y pair.
 8. **100KB cap** — measure the final string. Over → trim body to 8 paragraphs + append `<Paragraph>Read the full issue at <Link href="{{website_url}}">{{website_url}}</Link>.</Paragraph>` → reduce cards to 3 + trim descriptions → if still over, **fail** with "Issue content exceeds 100KB even after trimming. Reduce body length or move content to a web link." Do not call the API.
 
 ### Step 4 — Set email content (delegate → Loops API skill)
@@ -95,7 +97,7 @@ This is what this skill owns. Read `references/lmx-master-template.md` + `refere
 ### Step 5 — Gate 1: Preview (delegate + skill STOP)
 `POST /v1/email-messages/{id}/preview { emails:[author_email], contactProperties:{firstName:author_first_name} }`. Then **STOP**.
 
-> **GATE 1 — STOP.** "Preview sent to {author_email}. Open it in **Apple Mail (light + dark)** and **Gmail (light + dark)**. Check: Archivo loads on Apple / clean system-ui-Arial fallback on Gmail; the mint ladder reads as three distinct surfaces (canvas / sheet / card); 18px cards (square in Outlook Classic is expected); the italic emphasis word renders raspberry; raspberry card top-bars visible; the kicker reads **teal**, not raspberry; **the white CTA label stays legible on raspberry in dark mode**; CTA button ≥44px; no Gmail clipping. Subject + preview text are approved here. Reply **approved** to continue, or **revise** with changes."
+> **GATE 1 — STOP.** "Preview sent to {author_email}. Open it in **Apple Mail (light + dark)** and **Gmail (light + dark)**. Check: Sora on Apple Mail if Loops serves it, and a clean Arial fallback on Gmail either way; **each card still reads as a card** (its `#f6f7fa` fill is only 1.07:1 against the white sheet, so the 1px `#e6e9ef` border, the tinted top bar flush with the card's top edge, the 6px corners and the padding have to carry it); 6px corners on cards and the button (square in Outlook Classic is expected); the headline is plain ink with no italic or colored word; the kicker is muted and led by a ◆ in the link color; the masthead rule is ink; **the white CTA label stays legible on the ink button in dark mode, and links and meta lines stay legible there too**; CTA button ≥44px; no emoji; no Gmail clipping. Subject + preview text are approved here. Reply **approved** to continue, or **revise** with changes."
 >
 > Do NOT proceed until the user explicitly says "approved" / "looks good" / "send it to the list". On "revise", loop back to Step 3 with the requested changes (re-assemble → re-POST email-message with the latest `expectedRevisionId` → re-preview).
 
